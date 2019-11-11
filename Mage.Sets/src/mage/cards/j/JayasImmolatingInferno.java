@@ -15,7 +15,7 @@ import mage.target.common.TargetAnyTarget;
 /**
  * @author JRHerlehy Created on 4/8/18.
  */
-public class JayasImmolatingInferno extends CardImpl {
+public final class JayasImmolatingInferno extends CardImpl {
 
     public JayasImmolatingInferno(UUID ownerId, CardSetInfo setInfo) {
         super(ownerId, setInfo, new CardType[]{CardType.SORCERY}, "{X}{R}{R}");
@@ -24,8 +24,8 @@ public class JayasImmolatingInferno extends CardImpl {
         // (You may cast a legendary sorcery only if you control a legendary creature or planeswalker.)
         this.addAbility(new LegendarySpellAbility());
 
-        // Jaya’s Immolating Inferno deals X damage to each of up to three targets.
-        Effect effect = new DamageTargetEffect(new ManacostVariableValue());
+        // Jaya's Immolating Inferno deals X damage to each of up to three targets.
+        Effect effect = new DamageTargetEffect(ManacostVariableValue.instance);
         effect.setText("{this} deals X damage to each of up to three targets");
         this.getSpellAbility().addEffect(effect);
         this.getSpellAbility().addTarget(new TargetAnyTarget(1, 3));

@@ -1,30 +1,4 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
+
 package org.mage.test.cards.requirement;
 
 import mage.constants.PhaseStep;
@@ -250,5 +224,78 @@ public class BlockRequirementTest extends CardTestPlayerBase {
         assertGraveyardCount(playerA, "Memnite", 1);
         assertGraveyardCount(playerB, "Dimensional Infiltrator", 1);
         assertGraveyardCount(playerB, "Llanowar Elves", 1);
+    }
+    
+    /*
+     Reported bug: Challenger Troll on field not enforcing block restrictions
+    */
+    @Test
+    public void testChallengerTrollTryBlockWithMany() {
+        /*
+        Challenger Troll {4}{G} - 6/5
+        Creature — Troll
+        Each creature you control with power 4 or greater can’t be blocked by more than one creature.
+        */
+        String cTroll = "Challenger Troll";
+        
+        String bSable = "Bronze Sable"; // {2} 2/1
+        String hGiant = "Hill Giant"; // {3}{R} 3/3
+        
+        addCard(Zone.BATTLEFIELD, playerA, cTroll);
+        addCard(Zone.BATTLEFIELD, playerB, bSable);
+        addCard(Zone.BATTLEFIELD, playerB, hGiant);
+        
+        attack(1, playerA, cTroll);
+
+        // only 1 should be able to block it since Troll >=4 power block restriction
+        block(1, playerB, bSable, cTroll);
+        block(1, playerB, hGiant, cTroll);
+        
+        setStopAt(1, PhaseStep.POSTCOMBAT_MAIN);
+                
+        try {
+            execute();
+            fail("Expected exception not thrown");
+        } catch (UnsupportedOperationException e) {
+            assertEquals("Challenger Troll is blocked by 2 creature(s). It can only be blocked by 1 or less.", e.getMessage());
+        }        
+    }
+    
+    /*
+     Reported bug: Challenger Troll on field not enforcing block restrictions
+    */
+    @Test
+    public void testChallengerTrollAndOtherFourPowerCreaturesBlocks() {
+        /*
+        Challenger Troll {4}{G} - 6/5
+        Creature — Troll
+        Each creature you control with power 4 or greater can’t be blocked by more than one creature.
+        */
+        String cTroll = "Challenger Troll";
+        String bHulk = "Bloom Hulk"; // {3}{G} 4/4 ETB: proliferate
+        
+        String bSable = "Bronze Sable"; // {2} 2/1
+        String hGiant = "Hill Giant"; // {3}{R} 3/3
+        
+        addCard(Zone.BATTLEFIELD, playerA, cTroll);
+        addCard(Zone.BATTLEFIELD, playerA, bHulk);
+        addCard(Zone.BATTLEFIELD, playerB, bSable);
+        addCard(Zone.BATTLEFIELD, playerB, hGiant);
+        
+        attack(1, playerA, cTroll);
+        attack(1, playerA, bHulk);
+
+        // only 1 should be able to block Bloom Hulk since >=4 power and Troll on field
+        block(1, playerB, bSable, bHulk);
+        block(1, playerB, hGiant, bHulk);
+        
+        setStopAt(1, PhaseStep.POSTCOMBAT_MAIN);
+                
+        try {
+            execute();
+            fail("Expected exception not thrown");
+        } catch (UnsupportedOperationException e) {
+            assertEquals("Bloom Hulk is blocked by 2 creature(s). It can only be blocked by 1 or less.", e.getMessage());
+        }        
     }
 }

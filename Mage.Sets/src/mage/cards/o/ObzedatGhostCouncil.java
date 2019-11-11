@@ -1,42 +1,12 @@
-/*
- /*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.cards.o;
 
-import java.util.UUID;
 import mage.MageInt;
+import mage.MageObjectReference;
 import mage.abilities.Ability;
 import mage.abilities.DelayedTriggeredAbility;
 import mage.abilities.common.BeginningOfYourEndStepTriggeredAbility;
 import mage.abilities.common.EntersBattlefieldTriggeredAbility;
-import mage.abilities.effects.Effect;
 import mage.abilities.effects.OneShotEffect;
-import mage.abilities.effects.common.CreateDelayedTriggeredAbilityEffect;
 import mage.abilities.effects.common.GainLifeEffect;
 import mage.abilities.effects.common.LoseLifeTargetEffect;
 import mage.abilities.effects.common.continuous.GainAbilitySourceEffect;
@@ -52,11 +22,12 @@ import mage.game.permanent.Permanent;
 import mage.players.Player;
 import mage.target.common.TargetOpponent;
 
+import java.util.UUID;
+
 /**
- *
  * @author Plopman
  */
-public class ObzedatGhostCouncil extends CardImpl {
+public final class ObzedatGhostCouncil extends CardImpl {
 
     public ObzedatGhostCouncil(UUID ownerId, CardSetInfo setInfo) {
         super(ownerId, setInfo, new CardType[]{CardType.CREATURE}, "{1}{W}{W}{B}{B}");
@@ -69,16 +40,15 @@ public class ObzedatGhostCouncil extends CardImpl {
 
         //When Obzedat, Ghost Council enters the battlefield, target opponent loses 2 life and you gain 2 life.
         Ability ability = new EntersBattlefieldTriggeredAbility(new LoseLifeTargetEffect(2));
-        ability.addEffect(new GainLifeEffect(2));
+        ability.addEffect(new GainLifeEffect(2).concatBy("and"));
         ability.addTarget(new TargetOpponent());
         this.addAbility(ability);
-        //At the beginning of your end step you may exile Obzedat. If you do, return it to the battlefield under it's owner's control at the beginning of your next upkeep. It gains haste.
+        //At the beginning of your end step you may exile Obzedat. If you do, return it to the battlefield under its owner's control at the beginning of your next upkeep. It gains haste.
         Ability ability2 = new BeginningOfYourEndStepTriggeredAbility(new ObzedatGhostCouncilExileSourceEffect(), true);
-        ability2.addEffect(new CreateDelayedTriggeredAbilityEffect(new BeginningOfYourUpkeepdelayTriggeredAbility()));
         this.addAbility(ability2);
     }
 
-    public ObzedatGhostCouncil(final ObzedatGhostCouncil card) {
+    private ObzedatGhostCouncil(final ObzedatGhostCouncil card) {
         super(card);
     }
 
@@ -90,12 +60,13 @@ public class ObzedatGhostCouncil extends CardImpl {
 
 class ObzedatGhostCouncilExileSourceEffect extends OneShotEffect {
 
-    public ObzedatGhostCouncilExileSourceEffect() {
+    ObzedatGhostCouncilExileSourceEffect() {
         super(Outcome.Exile);
-        staticText = "Exile {this}";
+        staticText = "exile {this}. If you do, return it to the battlefield under its owner's control " +
+                "at the beginning of your next upkeep. It gains haste.";
     }
 
-    public ObzedatGhostCouncilExileSourceEffect(final ObzedatGhostCouncilExileSourceEffect effect) {
+    private ObzedatGhostCouncilExileSourceEffect(final ObzedatGhostCouncilExileSourceEffect effect) {
         super(effect);
     }
 
@@ -106,27 +77,25 @@ class ObzedatGhostCouncilExileSourceEffect extends OneShotEffect {
 
     @Override
     public boolean apply(Game game, Ability source) {
+        Player player = game.getPlayer(source.getControllerId());
         Permanent permanent = game.getPermanent(source.getSourceId());
-        if (permanent != null) {
-            return permanent.moveToExile(source.getSourceId(), permanent.getName(), source.getSourceId(), game);
+        if (permanent == null || player == null
+                || !player.moveCards(permanent, Zone.EXILED, source, game)) {
+            return false;
         }
-        return false;
+        game.addDelayedTriggeredAbility(new ObzedatGhostCouncilDelayedTriggeredAbility(new MageObjectReference(permanent, game)), source);
+        return true;
     }
 
 }
 
-class BeginningOfYourUpkeepdelayTriggeredAbility extends DelayedTriggeredAbility {
+class ObzedatGhostCouncilDelayedTriggeredAbility extends DelayedTriggeredAbility {
 
-    public BeginningOfYourUpkeepdelayTriggeredAbility() {
-        this(new ObzedatGhostCouncilReturnEffect(), TargetController.YOU);
-        this.addEffect(new GainAbilitySourceEffect(HasteAbility.getInstance(), Duration.Custom));
+    ObzedatGhostCouncilDelayedTriggeredAbility(MageObjectReference mor) {
+        super(new ObzedatGhostCouncilReturnEffect(mor));
     }
 
-    public BeginningOfYourUpkeepdelayTriggeredAbility(Effect effect, TargetController targetController) {
-        super(effect);
-    }
-
-    public BeginningOfYourUpkeepdelayTriggeredAbility(BeginningOfYourUpkeepdelayTriggeredAbility ability) {
+    private ObzedatGhostCouncilDelayedTriggeredAbility(ObzedatGhostCouncilDelayedTriggeredAbility ability) {
         super(ability);
     }
 
@@ -141,24 +110,28 @@ class BeginningOfYourUpkeepdelayTriggeredAbility extends DelayedTriggeredAbility
     }
 
     @Override
-    public BeginningOfYourUpkeepdelayTriggeredAbility copy() {
-        return new BeginningOfYourUpkeepdelayTriggeredAbility(this);
+    public ObzedatGhostCouncilDelayedTriggeredAbility copy() {
+        return new ObzedatGhostCouncilDelayedTriggeredAbility(this);
     }
 
     @Override
     public String getRule() {
-        return "If you do, return it to the battlefield under it's owner's control at the beginning of your next upkeep. It gains haste";
+        return "Return {this} to the battlefield under its owner's control at the beginning of your next upkeep. It gains haste";
     }
 }
 
 class ObzedatGhostCouncilReturnEffect extends OneShotEffect {
 
-    public ObzedatGhostCouncilReturnEffect() {
+    private final MageObjectReference mor;
+
+    ObzedatGhostCouncilReturnEffect(MageObjectReference mor) {
         super(Outcome.Benefit);
+        this.mor = mor;
     }
 
-    public ObzedatGhostCouncilReturnEffect(final ObzedatGhostCouncilReturnEffect effect) {
+    private ObzedatGhostCouncilReturnEffect(final ObzedatGhostCouncilReturnEffect effect) {
         super(effect);
+        this.mor = effect.mor;
     }
 
     @Override
@@ -168,19 +141,20 @@ class ObzedatGhostCouncilReturnEffect extends OneShotEffect {
 
     @Override
     public boolean apply(Game game, Ability source) {
-        Card card = game.getCard(source.getSourceId());
-        if (card != null) {
-            Zone zone = game.getState().getZone(source.getSourceId());
-            // return it from every public zone - http://www.mtgsalvation.com/forums/magic-fundamentals/magic-rulings/magic-rulings-archives/513186-obzedat-gc-as-edh-commander
-            if (zone != Zone.BATTLEFIELD && zone != Zone.LIBRARY && zone != Zone.HAND) {
-                Player owner = game.getPlayer(card.getOwnerId());
-                if (owner != null) {
-                    owner.moveCards(card, Zone.BATTLEFIELD, source, game);
-                }
-            }
-            return true;
+        Card card = mor.getCard(game);
+        if (card == null) {
+            return false;
         }
-        return false;
+        Zone zone = game.getState().getZone(source.getSourceId());
+        // return it from every public zone - http://www.mtgsalvation.com/forums/magic-fundamentals/magic-rulings/magic-rulings-archives/513186-obzedat-gc-as-edh-commander
+        if (zone == Zone.BATTLEFIELD || zone == Zone.LIBRARY || zone == Zone.HAND) {
+            return false;
+        }
+        Player owner = game.getPlayer(card.getOwnerId());
+        if (owner == null || !owner.moveCards(card, Zone.BATTLEFIELD, source, game)) {
+            return false;
+        }
+        game.addEffect(new GainAbilitySourceEffect(HasteAbility.getInstance(), Duration.WhileOnBattlefield), source);
+        return true;
     }
-
 }

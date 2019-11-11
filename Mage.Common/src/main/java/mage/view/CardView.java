@@ -1,34 +1,6 @@
-/*
- * Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are those of the
- * authors and should not be interpreted as representing official policies, either expressed
- * or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.view;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import com.google.gson.annotations.Expose;
 import mage.MageObject;
 import mage.ObjectColor;
 import mage.abilities.Abilities;
@@ -44,6 +16,7 @@ import mage.counters.CounterType;
 import mage.designations.Designation;
 import mage.game.Game;
 import mage.game.command.Emblem;
+import mage.game.command.Plane;
 import mage.game.permanent.Permanent;
 import mage.game.permanent.PermanentToken;
 import mage.game.permanent.token.Token;
@@ -53,13 +26,13 @@ import mage.target.Target;
 import mage.target.Targets;
 import mage.util.SubTypeList;
 
-import com.google.gson.annotations.Expose;
-import mage.game.command.Plane;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author BetaSteward_at_googlemail.com
  */
-public class CardView extends SimpleCardView {
+public class CardView extends SimpleCardView implements SelectableObjectView {
 
     private static final long serialVersionUID = 1L;
 
@@ -77,9 +50,9 @@ public class CardView extends SimpleCardView {
     @Expose
     protected String loyalty = "";
     protected String startingLoyalty;
-    protected EnumSet<CardType> cardTypes;
+    protected Set<CardType> cardTypes;
     protected SubTypeList subTypes;
-    protected EnumSet<SuperType> superTypes;
+    protected Set<SuperType> superTypes;
     protected ObjectColor color;
     protected ObjectColor frameColor;
     protected FrameStyle frameStyle;
@@ -135,7 +108,10 @@ public class CardView extends SimpleCardView {
     protected boolean isChoosable;
     protected boolean selected;
     protected boolean canAttack;
+    protected boolean canBlock;
     protected boolean inViewerOnly;
+
+    protected Card originalCard = null;
 
     public CardView(Card card) {
         this(card, null, false);
@@ -153,6 +129,7 @@ public class CardView extends SimpleCardView {
 
     public CardView(CardView cardView) {
         super(cardView.id, cardView.expansionSetCode, cardView.cardNumber, cardView.usesVariousArt, cardView.tokenSetCode, cardView.gameObject, cardView.tokenDescriptor);
+        this.originalCard = cardView.originalCard;
 
         this.id = UUID.randomUUID();
         this.parentId = cardView.parentId;
@@ -225,15 +202,17 @@ public class CardView extends SimpleCardView {
         this.isChoosable = cardView.isChoosable;
         this.selected = cardView.selected;
         this.canAttack = cardView.canAttack;
+        this.canBlock = cardView.canBlock;
         this.inViewerOnly = cardView.inViewerOnly;
+        this.originalCard = cardView.originalCard.copy();
     }
 
     /**
      * @param card
      * @param game
      * @param controlled is the card view created for the card controller - used
-     * for morph / face down cards to know which player may see information for
-     * the card
+     *                   for morph / face down cards to know which player may see information for
+     *                   the card
      */
     public CardView(Card card, Game game, boolean controlled) {
         this(card, game, controlled, false, false);
@@ -259,15 +238,17 @@ public class CardView extends SimpleCardView {
     /**
      * @param card
      * @param game
-     * @param controlled is the card view created for the card controller - used
-     * for morph / face down cards to know which player may see information for
-     * the card
+     * @param controlled       is the card view created for the card controller - used
+     *                         for morph / face down cards to know which player may see information for
+     *                         the card
      * @param showFaceDownCard if true and the card is not on the battlefield,
-     * also a face down card is shown in the view, face down cards will be shown
-     * @param storeZone if true the card zone will be set in the zone attribute.
+     *                         also a face down card is shown in the view, face down cards will be shown
+     * @param storeZone        if true the card zone will be set in the zone attribute.
      */
     public CardView(Card card, Game game, boolean controlled, boolean showFaceDownCard, boolean storeZone) {
         super(card.getId(), card.getExpansionSetCode(), card.getCardNumber(), card.getUsesVariousArt(), card.getTokenSetCode(), game != null, card.getTokenDescriptor());
+        this.originalCard = card;
+
         // no information available for face down cards as long it's not a controlled face down morph card
         // TODO: Better handle this in Framework (but currently I'm not sure how to do it there) LevelX2
         boolean showFaceUp = true;
@@ -306,7 +287,7 @@ public class CardView extends SimpleCardView {
                 this.power = Integer.toString(card.getPower().getValue());
                 this.toughness = Integer.toString(card.getToughness().getValue());
                 this.cardTypes = card.getCardType();
-                this.faceDown = ((Permanent) card).isFaceDown(game);
+                this.faceDown = card.isFaceDown(game);
             } else {
                 // this.hideInfo = true;
                 return;
@@ -316,9 +297,9 @@ public class CardView extends SimpleCardView {
         SplitCard splitCard = null;
         if (card.isSplitCard()) {
             splitCard = (SplitCard) card;
-            rotate = (((SplitCard) card).getSpellAbility().getSpellAbilityType()) != SpellAbilityType.SPLIT_AFTERMATH;
+            rotate = (card.getSpellAbility().getSpellAbilityType()) != SpellAbilityType.SPLIT_AFTERMATH;
         } else if (card instanceof Spell) {
-            switch (((Spell) card).getSpellAbility().getSpellAbilityType()) {
+            switch (card.getSpellAbility().getSpellAbilityType()) {
                 case SPLIT_FUSED:
                     splitCard = (SplitCard) ((Spell) card).getCard();
                     rotate = true;
@@ -410,12 +391,12 @@ public class CardView extends SimpleCardView {
                 this.cardNumber = ((PermanentToken) card).getToken().getOriginalCardNumber();
             } else {
                 // a created token
-                this.expansionSetCode = ((PermanentToken) card).getExpansionSetCode();
-                this.tokenDescriptor = ((PermanentToken) card).getTokenDescriptor();
+                this.expansionSetCode = card.getExpansionSetCode();
+                this.tokenDescriptor = card.getTokenDescriptor();
             }
             //
             // set code und card number for token copies to get the image
-            this.rules = ((PermanentToken) card).getRules(game);
+            this.rules = card.getRules(game);
             this.type = ((PermanentToken) card).getToken().getTokenType();
         } else {
             this.rarity = card.getRarity();
@@ -487,10 +468,14 @@ public class CardView extends SimpleCardView {
 
         // Get starting loyalty
         this.startingLoyalty = "" + card.getStartingLoyalty();
+
+
     }
 
     public CardView(MageObject object) {
         super(object.getId(), "", "0", false, "", true, "");
+        this.originalCard = null;
+
         this.name = object.getName();
         this.displayName = object.getName();
         if (object instanceof Permanent) {
@@ -529,10 +514,17 @@ public class CardView extends SimpleCardView {
             // Display in landscape/rotated/on its side
             this.rotate = true;
             this.rules = plane.getAbilities().getRules(plane.getName());
+        } else if (object instanceof Designation) {
+            this.mageObjectType = MageObjectType.DESIGNATION;
+            Designation designation = (Designation) object;
+            this.rarity = Rarity.SPECIAL;
+            this.frameStyle = FrameStyle.M15_NORMAL;
+            // Display in landscape/rotated/on its side
+            this.rules = designation.getAbilities().getRules(designation.getName());
         }
         if (this.rarity == null && object instanceof StackAbility) {
             StackAbility stackAbility = (StackAbility) object;
-            this.rarity = Rarity.NA;
+            this.rarity = Rarity.SPECIAL;
             this.rules = new ArrayList<>();
             this.rules.add(stackAbility.getRule());
             if (stackAbility.getZone() == Zone.COMMAND) {
@@ -664,7 +656,7 @@ public class CardView extends SimpleCardView {
         this.frameColor = token.getFrameColor(null);
         this.frameStyle = token.getFrameStyle();
         this.manaCost = token.getManaCost().getSymbols();
-        this.rarity = Rarity.NA;
+        this.rarity = Rarity.SPECIAL;
         this.type = token.getTokenType();
         this.tokenDescriptor = token.getTokenDescriptor();
         this.tokenSetCode = token.getOriginalExpansionSetCode();
@@ -739,7 +731,7 @@ public class CardView extends SimpleCardView {
         return subTypes;
     }
 
-    public EnumSet<SuperType> getSuperTypes() {
+    public Set<SuperType> getSuperTypes() {
         return superTypes;
     }
 
@@ -769,7 +761,7 @@ public class CardView extends SimpleCardView {
 
     @Override
     public String getExpansionSetCode() {
-        if (expansionSetCode == null) { 
+        if (expansionSetCode == null) {
             expansionSetCode = "";
         }
         return expansionSetCode;
@@ -1004,6 +996,14 @@ public class CardView extends SimpleCardView {
         this.canAttack = canAttack;
     }
 
+    public boolean isCanBlock() {
+        return canBlock;
+    }
+
+    public void setCanBlock(boolean canBlock) {
+        this.canBlock = canBlock;
+    }
+
     public boolean isCreature() {
         return cardTypes.contains(CardType.CREATURE);
     }
@@ -1065,5 +1065,9 @@ public class CardView extends SimpleCardView {
 
     public boolean inViewerOnly() {
         return inViewerOnly;
+    }
+
+    public Card getOriginalCard() {
+        return this.originalCard;
     }
 }

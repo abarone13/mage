@@ -1,45 +1,15 @@
-/*
- * Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are those of the
- * authors and should not be interpreted as representing official policies, either expressed
- * or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.game;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
 import mage.cards.Card;
+import mage.filter.FilterCard;
 import mage.util.Copyable;
 
+import java.io.Serializable;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public class Exile implements Serializable, Copyable<Exile> {
@@ -96,6 +66,11 @@ public class Exile implements Serializable, Copyable<Exile> {
         return null;
     }
 
+    public List<Card> getCards(FilterCard filter, Game game) {
+        List<Card> allCards = getAllCards(game);
+        return allCards.stream().filter(card -> filter.match(card, game)).collect(Collectors.toList());
+    }
+
     public List<Card> getAllCards(Game game) {
         List<Card> cards = new ArrayList<>();
         for (ExileZone exile : exileZones.values()) {
@@ -130,6 +105,19 @@ public class Exile implements Serializable, Copyable<Exile> {
     public void clear() {
         for (ExileZone exile : exileZones.values()) {
             exile.clear();
+        }
+    }
+
+    public void cleanupEndOfTurnZones(Game game) {
+        // moves cards from outdated zone to main exile zone
+        ExileZone mainZone = getExileZone(PERMANENT);
+        for (ExileZone zone : exileZones.values()) {
+            if (zone.isCleanupOnEndTurn()) {
+                for (Card card : zone.getCards(game)) {
+                    mainZone.add(card);
+                    zone.remove(card);
+                }
+            }
         }
     }
 }

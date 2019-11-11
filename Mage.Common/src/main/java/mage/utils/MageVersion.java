@@ -1,62 +1,43 @@
-/*
- * Copyright 2011 BetaSteward_at_googlemail.com. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are those of the
- * authors and should not be interpreted as representing official policies, either expressed
- * or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.utils;
+
+import mage.util.JarVersion;
 
 import java.io.Serializable;
 
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public class MageVersion implements Serializable, Comparable<MageVersion> {
 
-    /**
-     *
-     */
-    public final static int MAGE_VERSION_MAJOR = 1;
-    public final static int MAGE_VERSION_MINOR = 4;
-    public final static int MAGE_VERSION_PATCH = 29;
-    public final static String MAGE_VERSION_MINOR_PATCH = "V2";
-    public final static String MAGE_VERSION_INFO = "";
+    public static final int MAGE_VERSION_MAJOR = 1;
+    public static final int MAGE_VERSION_MINOR = 4;
+    public static final int MAGE_VERSION_PATCH = 39;
+    public static final String MAGE_EDITION_INFO = ""; // set "-beta" for 1.4.32-betaV0
+    public static final String MAGE_VERSION_MINOR_PATCH = "V0"; // default
+    // strict mode
+    private static final boolean MAGE_VERSION_MINOR_PATCH_MUST_BE_SAME = false; // set true on uncompatible github changes, set false after new major release (after MAGE_VERSION_PATCH changes)
 
+    public static final boolean MAGE_VERSION_SHOW_BUILD_TIME = true;
     private final int major;
     private final int minor;
     private final int patch;
     private final String minorPatch; // doesn't matter for compatibility
+    private final String buildTime;
+    private String editionInfo;
 
-    private String info = "";
+    public MageVersion(Class sourceClass) {
+        this(MAGE_VERSION_MAJOR, MAGE_VERSION_MINOR, MAGE_VERSION_PATCH, MAGE_VERSION_MINOR_PATCH, MAGE_EDITION_INFO, sourceClass);
+    }
 
-    public MageVersion(int major, int minor, int patch, String minorPatch, String info) {
+    public MageVersion(int major, int minor, int patch, String minorPatch, String editionInfo, Class sourceClass) {
         this.major = major;
         this.minor = minor;
         this.patch = patch;
         this.minorPatch = minorPatch;
-        this.info = info;
+        this.editionInfo = editionInfo;
+
+        // build time
+        this.buildTime = JarVersion.getBuildTime(sourceClass);
     }
 
     public int getMajor() {
@@ -75,9 +56,18 @@ public class MageVersion implements Serializable, Comparable<MageVersion> {
         return minorPatch;
     }
 
+    public String toString(boolean showBuildTime) {
+        // 1.4.32-betaV0 (build: time)
+        String res = major + "." + minor + '.' + patch + editionInfo + minorPatch;
+        if (showBuildTime && !this.buildTime.isEmpty()) {
+            res += " (build: " + this.buildTime + ")";
+        }
+        return res;
+    }
+
     @Override
     public String toString() {
-        return major + "." + minor + '.' + patch + info + minorPatch;
+        return toString(MAGE_VERSION_SHOW_BUILD_TIME);
     }
 
     @Override
@@ -91,7 +81,9 @@ public class MageVersion implements Serializable, Comparable<MageVersion> {
         if (patch != o.patch) {
             return patch - o.patch;
         }
-        return info.compareTo(o.info);
+        if (MAGE_VERSION_MINOR_PATCH_MUST_BE_SAME && !minorPatch.equals(o.minorPatch)) {
+            return minorPatch.compareTo(o.minorPatch);
+        }
+        return editionInfo.compareTo(o.editionInfo);
     }
-
 }

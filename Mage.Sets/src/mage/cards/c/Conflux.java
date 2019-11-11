@@ -1,30 +1,4 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
+
 package mage.cards.c;
 
 import java.util.UUID;
@@ -45,7 +19,7 @@ import mage.target.common.TargetCardInLibrary;
  *
  * @author jeffwadsworth
  */
-public class Conflux extends CardImpl {
+public final class Conflux extends CardImpl {
 
     public Conflux(UUID ownerId, CardSetInfo setInfo) {
         super(ownerId,setInfo,new CardType[]{CardType.SORCERY},"{3}{W}{U}{B}{R}{G}");
@@ -103,7 +77,7 @@ class ConfluxEffect extends OneShotEffect {
         TargetCardInLibrary targetGreen = new TargetCardInLibrary(filterGreen);
 
         if (you != null && you.getLibrary().hasCards()) {
-            if (you.searchLibrary(targetWhite, game)) {
+            if (you.searchLibrary(targetWhite, source, game)) {
                 if (!targetWhite.getTargets().isEmpty()) {
                     for (UUID cardId : targetWhite.getTargets()) {
                         Card card = you.getLibrary().remove(cardId, game);
@@ -115,7 +89,7 @@ class ConfluxEffect extends OneShotEffect {
             }
         }
         if (you != null && you.getLibrary().hasCards()) {
-            if (you.searchLibrary(targetBlue, game)) {
+            if (you.searchLibrary(targetBlue, source, game)) {
                 if (!targetBlue.getTargets().isEmpty()) {
                     for (UUID cardId : targetBlue.getTargets()) {
                         Card card = you.getLibrary().remove(cardId, game);
@@ -127,7 +101,7 @@ class ConfluxEffect extends OneShotEffect {
             }
         }
         if (you != null && you.getLibrary().hasCards()) {
-            if (you.searchLibrary(targetBlack, game)) {
+            if (you.searchLibrary(targetBlack, source, game)) {
                 if (!targetBlack.getTargets().isEmpty()) {
                     for (UUID cardId : targetBlack.getTargets()) {
                         Card card = you.getLibrary().remove(cardId, game);
@@ -139,7 +113,7 @@ class ConfluxEffect extends OneShotEffect {
             }
         }
         if (you != null && you.getLibrary().hasCards()) {
-            if (you.searchLibrary(targetRed, game)) {
+            if (you.searchLibrary(targetRed, source, game)) {
                 if (!targetRed.getTargets().isEmpty()) {
                     for (UUID cardId : targetRed.getTargets()) {
                         Card card = you.getLibrary().remove(cardId, game);
@@ -151,7 +125,7 @@ class ConfluxEffect extends OneShotEffect {
             }
         }
         if (you != null && you.getLibrary().hasCards()) {
-            if (you.searchLibrary(targetGreen, game)) {
+            if (you.searchLibrary(targetGreen, source, game)) {
                 if (!targetGreen.getTargets().isEmpty()) {
                     for (UUID cardId : targetGreen.getTargets()) {
                         Card card = you.getLibrary().remove(cardId, game);

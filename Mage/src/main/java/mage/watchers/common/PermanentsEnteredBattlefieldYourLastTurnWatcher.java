@@ -11,23 +11,19 @@ import mage.game.events.GameEvent;
 import mage.game.permanent.Permanent;
 import mage.watchers.Watcher;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
- *
  * @author LevelX2 (spjspj)
  */
 public class PermanentsEnteredBattlefieldYourLastTurnWatcher extends Watcher {
 
-    private final HashMap<UUID, List<Permanent>> enteringBattlefield = new HashMap<>();
-    private final HashMap<UUID, List<Permanent>> enteringBattlefieldLastTurn = new HashMap<>();
+    private final Map<UUID, List<Permanent>> enteringBattlefield = new HashMap<>();
+    private final Map<UUID, List<Permanent>> enteringBattlefieldLastTurn = new HashMap<>();
     private UUID lastActivePlayer = null;
 
     public PermanentsEnteredBattlefieldYourLastTurnWatcher() {
-        super(PermanentsEnteredBattlefieldYourLastTurnWatcher.class.getSimpleName(), WatcherScope.GAME);
+        super(WatcherScope.GAME);
     }
 
     public PermanentsEnteredBattlefieldYourLastTurnWatcher(final PermanentsEnteredBattlefieldYourLastTurnWatcher watcher) {
@@ -65,6 +61,7 @@ public class PermanentsEnteredBattlefieldYourLastTurnWatcher extends Watcher {
 
     @Override
     public void reset() {
+        super.reset();
         if (enteringBattlefieldLastTurn != null
                 && lastActivePlayer != null
                 && enteringBattlefieldLastTurn.get(lastActivePlayer) != null) {
@@ -76,7 +73,7 @@ public class PermanentsEnteredBattlefieldYourLastTurnWatcher extends Watcher {
     }
 
     public List<Permanent> getPermanentsEnteringOnPlayersLastTurn(Game game, UUID playerId) {
-        if (game.getActivePlayerId().equals(playerId)) {
+        if (game.isActivePlayer(playerId)) {
             return enteringBattlefield.get(playerId);
         }
         return enteringBattlefieldLastTurn.get(playerId);

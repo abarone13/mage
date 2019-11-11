@@ -1,16 +1,19 @@
 package mage.abilities.effects.common;
 
-import java.util.Locale;
 import mage.abilities.Ability;
 import mage.abilities.Mode;
 import mage.abilities.costs.Cost;
+import mage.abilities.costs.mana.ManaCost;
+import mage.abilities.dynamicvalue.DynamicValue;
 import mage.abilities.effects.OneShotEffect;
 import mage.constants.Outcome;
 import mage.constants.Zone;
 import mage.game.Game;
 import mage.game.permanent.Permanent;
 import mage.players.Player;
-import mage.util.CardUtil;
+import mage.util.ManaUtil;
+
+import java.util.Locale;
 
 /**
  * Created by IntelliJ IDEA. User: Loki Date: 21.12.10 Time: 9:21
@@ -18,36 +21,58 @@ import mage.util.CardUtil;
 public class SacrificeSourceUnlessPaysEffect extends OneShotEffect {
 
     protected Cost cost;
+    protected DynamicValue genericMana;
 
     public SacrificeSourceUnlessPaysEffect(Cost cost) {
         super(Outcome.Sacrifice);
         this.cost = cost;
     }
 
+    public SacrificeSourceUnlessPaysEffect(DynamicValue genericMana) {
+        super(Outcome.Detriment);
+        this.genericMana = genericMana;
+    }
+
     public SacrificeSourceUnlessPaysEffect(final SacrificeSourceUnlessPaysEffect effect) {
         super(effect);
-        this.cost = effect.cost.copy();
+        if (effect.cost != null) {
+            this.cost = effect.cost.copy();
+        }
+        if (effect.genericMana != null) {
+            this.genericMana = effect.genericMana.copy();
+        }
     }
 
     @Override
     public boolean apply(Game game, Ability source) {
-        Player controller = game.getPlayer(source.getControllerId());
+        Player player = game.getPlayer(source.getControllerId());
         Permanent sourcePermanent = game.getPermanentOrLKIBattlefield(source.getSourceId());
-        if (controller != null && sourcePermanent != null) {
-            StringBuilder sb = new StringBuilder(cost.getText()).append('?');
-            if (!sb.toString().toLowerCase(Locale.ENGLISH).startsWith("exile ") && !sb.toString().toLowerCase(Locale.ENGLISH).startsWith("return ")) {
-                sb.insert(0, "Pay ");
+        if (player != null && sourcePermanent != null) {
+            Cost costToPay;
+            String costValueMessage;
+            if (cost != null) {
+                costToPay = cost.copy();
+                costValueMessage = costToPay.getText();
+            } else {
+                costToPay = ManaUtil.createManaCost(genericMana, game, source, this);
+                costValueMessage = "{" + genericMana.calculate(game, source, this) + "}";
             }
-            String message = CardUtil.replaceSourceName(sb.toString(), sourcePermanent.getLogName());
-            message = Character.toUpperCase(message.charAt(0)) + message.substring(1);
-            if (cost.canPay(source, source.getSourceId(), source.getControllerId(), game)
-                    && controller.chooseUse(Outcome.Benefit, message, source, game)) {
-                cost.clearPaid();
-                if (cost.pay(source, game, source.getSourceId(), source.getControllerId(), false, null)) {
-                    game.informPlayers(controller.getLogName() + " pays " + cost.getText());
-                    return true;
-                }
+            String message;
+            if (costToPay instanceof ManaCost) {
+                message = "Would you like to pay " + costValueMessage + " to prevent sacrifice effect?";
+            } else {
+                message = costValueMessage + " to prevent sacrifice effect?";
             }
+
+            costToPay.clearPaid();
+            if (costToPay.canPay(source, source.getSourceId(), source.getControllerId(), game)
+                    && player.chooseUse(Outcome.Benefit, message, source, game)
+                    && costToPay.pay(source, game, source.getSourceId(), source.getControllerId(), false, null)) {
+                game.informPlayers(player.getLogName() + " chooses to pay " + costValueMessage + " to prevent sacrifice effect");
+                return true;
+            }
+
+            game.informPlayers(player.getLogName() + " chooses not to pay " + costValueMessage + " to prevent sacrifice effect");
             if (source.getSourceObjectZoneChangeCounter() == game.getState().getZoneChangeCounter(source.getSourceId())
                     && game.getState().getZone(source.getSourceId()) == Zone.BATTLEFIELD) {
                 sourcePermanent.sacrifice(source.getSourceId(), game);
@@ -69,7 +94,8 @@ public class SacrificeSourceUnlessPaysEffect extends OneShotEffect {
         }
 
         StringBuilder sb = new StringBuilder("sacrifice {this} unless you ");
-        String costText = cost.getText();
+        String costText = cost != null ? cost.getText() : "{X}";
+
         if (costText.toLowerCase(Locale.ENGLISH).startsWith("discard")
                 || costText.toLowerCase(Locale.ENGLISH).startsWith("remove")
                 || costText.toLowerCase(Locale.ENGLISH).startsWith("return")

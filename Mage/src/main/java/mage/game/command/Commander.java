@@ -1,48 +1,18 @@
-/*
- * Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are those of the
- * authors and should not be interpreted as representing official policies, either expressed
- * or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.game.command;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.UUID;
 import mage.MageInt;
+import mage.MageObject;
 import mage.ObjectColor;
-import mage.abilities.Abilities;
-import mage.abilities.AbilitiesImpl;
-import mage.abilities.Ability;
-import mage.abilities.SpellAbility;
+import mage.abilities.*;
 import mage.abilities.common.CastCommanderAbility;
+import mage.abilities.common.PlayLandAsCommanderAbility;
 import mage.abilities.costs.mana.ManaCost;
 import mage.abilities.costs.mana.ManaCosts;
 import mage.abilities.text.TextPart;
 import mage.cards.Card;
 import mage.cards.FrameStyle;
 import mage.constants.CardType;
+import mage.constants.SpellAbilityType;
 import mage.constants.SubType;
 import mage.constants.SuperType;
 import mage.game.Game;
@@ -50,24 +20,56 @@ import mage.game.events.ZoneChangeEvent;
 import mage.util.GameLog;
 import mage.util.SubTypeList;
 
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 public class Commander implements CommandObject {
 
     private final Card sourceObject;
+    private boolean copy;
+    private MageObject copyFrom; // copied card INFO (used to call original adjusters)
     private final Abilities<Ability> abilities = new AbilitiesImpl<>();
 
     public Commander(Card card) {
         this.sourceObject = card;
-        abilities.add(new CastCommanderAbility(card));
+
+        // replace spell ability by commander cast spell (to cast from command zone)
+        if (card.getSpellAbility() != null) {
+            abilities.add(new CastCommanderAbility(card, card.getSpellAbility()));
+        }
+
+        // replace alternative spell abilities by commander cast spell (to cast from command zone)
         for (Ability ability : card.getAbilities()) {
-            if (!(ability instanceof SpellAbility)) {
+            if (ability instanceof SpellAbility) {
+                SpellAbility spellAbility = (SpellAbility) ability;
+                if (spellAbility.getSpellAbilityType() == SpellAbilityType.BASE_ALTERNATE) {
+                    abilities.add(new CastCommanderAbility(card, spellAbility));
+                }
+            }
+        }
+
+        // replace play land with commander play land (to play from command zone)
+        for (Ability ability : card.getAbilities()) {
+            if (ability instanceof PlayLandAbility) {
+                Ability newAbility = new PlayLandAsCommanderAbility((PlayLandAbility) ability);
+                abilities.add(newAbility);
+            }
+        }
+
+        // other abilities
+        for (Ability ability : card.getAbilities()) {
+            if (!(ability instanceof SpellAbility) && !(ability instanceof PlayLandAbility)) {
                 Ability newAbility = ability.copy();
                 abilities.add(newAbility);
             }
         }
     }
 
-    private Commander(Commander copy) {
-        this.sourceObject = copy.sourceObject;
+    private Commander(final Commander commander) {
+        this.sourceObject = commander.sourceObject;
+        this.copy = commander.copy;
+        this.copyFrom = (commander.copyFrom != null ? commander.copyFrom.copy() : null);
     }
 
     @Override
@@ -95,6 +97,22 @@ public class Commander implements CommandObject {
     }
 
     @Override
+    public void setCopy(boolean isCopy, MageObject copyFrom) {
+        this.copy = isCopy;
+        this.copyFrom = (copyFrom != null ? copyFrom.copy() : null);
+    }
+
+    @Override
+    public boolean isCopy() {
+        return this.copy;
+    }
+
+    @Override
+    public MageObject getCopyFrom() {
+        return this.copyFrom;
+    }
+
+    @Override
     public String getName() {
         return sourceObject.getName();
     }
@@ -115,7 +133,7 @@ public class Commander implements CommandObject {
     }
 
     @Override
-    public EnumSet<CardType> getCardType() {
+    public Set<CardType> getCardType() {
         return sourceObject.getCardType();
     }
 
@@ -130,7 +148,7 @@ public class Commander implements CommandObject {
     }
 
     @Override
-    public EnumSet<SuperType> getSuperType() {
+    public Set<SuperType> getSuperType() {
         return sourceObject.getSuperType();
     }
 
@@ -194,15 +212,6 @@ public class Commander implements CommandObject {
 
     @Override
     public void adjustTargets(Ability ability, Game game) {
-    }
-
-    @Override
-    public void setCopy(boolean isCopy) {
-    }
-
-    @Override
-    public boolean isCopy() {
-        return false;
     }
 
     @Override

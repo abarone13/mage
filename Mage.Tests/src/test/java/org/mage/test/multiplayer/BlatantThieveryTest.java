@@ -5,7 +5,6 @@
  */
 package org.mage.test.multiplayer;
 
-import java.io.FileNotFoundException;
 import mage.constants.MultiplayerAttackOption;
 import mage.constants.PhaseStep;
 import mage.constants.RangeOfInfluence;
@@ -13,18 +12,20 @@ import mage.constants.Zone;
 import mage.game.FreeForAll;
 import mage.game.Game;
 import mage.game.GameException;
+import mage.game.mulligan.MulliganType;
 import org.junit.Test;
 import org.mage.test.serverside.base.CardTestMultiPlayerBase;
 
+import java.io.FileNotFoundException;
+
 /**
- *
  * @author LevelX2
  */
 public class BlatantThieveryTest extends CardTestMultiPlayerBase {
 
     @Override
     protected Game createNewGameAndPlayers() throws GameException, FileNotFoundException {
-        Game game = new FreeForAll(MultiplayerAttackOption.MULTIPLE, RangeOfInfluence.ALL, 0, 20);
+        Game game = new FreeForAll(MultiplayerAttackOption.MULTIPLE, RangeOfInfluence.ALL, MulliganType.GAME_DEFAULT.getMulligan(0), 20);
         // Player order: A -> D -> C -> B
         playerA = createPlayer(game, playerA, "PlayerA");
         playerB = createPlayer(game, playerB, "PlayerB");
@@ -52,6 +53,7 @@ public class BlatantThieveryTest extends CardTestMultiPlayerBase {
         setStopAt(1, PhaseStep.BEGIN_COMBAT);
         execute();
 
+        assertGraveyardCount(playerA, "Blatant Thievery", 1);
         assertPermanentCount(playerA, "Silvercoat Lion", 1);
         assertPermanentCount(playerA, "Walking Corpse", 1);
         assertPermanentCount(playerA, "Pillarfield Ox", 1);

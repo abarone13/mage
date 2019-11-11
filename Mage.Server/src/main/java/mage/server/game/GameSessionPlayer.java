@@ -1,40 +1,10 @@
-/*
- * Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are those of the
- * authors and should not be interpreted as representing official policies, either expressed
- * or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.server.game;
 
-import java.io.Serializable;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
 import mage.cards.Cards;
 import mage.choices.Choice;
 import mage.constants.ManaType;
 import mage.constants.PlayerAction;
+import mage.constants.Zone;
 import mage.game.Game;
 import mage.game.Table;
 import mage.interfaces.callback.ClientCallback;
@@ -45,6 +15,11 @@ import mage.server.UserManager;
 import mage.server.util.ThreadExecutor;
 import mage.view.*;
 import org.apache.log4j.Logger;
+
+import java.io.Serializable;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author BetaSteward_at_googlemail.com
@@ -178,7 +153,7 @@ public class GameSessionPlayer extends GameSessionWatcher {
                 UserRequestMessage userRequestMessage = new UserRequestMessage(
                         "User request",
                         "Allow user <b>" + watcher.get().getName() + "</b> for this match to see your hand cards?<br>"
-                        + "(You can revoke this every time using related popup menu item of your battlefield.)");
+                                + "(You can revoke this every time using related popup menu item of your battlefield.)");
                 userRequestMessage.setRelatedUser(watcherId, watcher.get().getName());
                 userRequestMessage.setGameId(game.getId());
                 userRequestMessage.setButton1("Accept", PlayerAction.ADD_PERMISSION_TO_SEE_HAND_CARDS);
@@ -214,7 +189,7 @@ public class GameSessionPlayer extends GameSessionWatcher {
         GameView gameView = new GameView(game.getState(), game, playerId, null);
         gameView.setHand(new CardsView(game, player.getHand().getCards(game)));
         if (gameView.getPriorityPlayerName().equals(player.getName())) {
-            gameView.setCanPlayInHand(player.getPlayableInHand(game));
+            gameView.setCanPlayObjects(player.getPlayableObjects(game, Zone.ALL));
         }
 
         processControlledPlayers(player, gameView);

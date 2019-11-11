@@ -1,33 +1,5 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.abilities.effects.common;
 
-import java.util.UUID;
 import mage.abilities.Ability;
 import mage.abilities.effects.OneShotEffect;
 import mage.cards.Card;
@@ -41,32 +13,52 @@ import mage.game.Game;
 import mage.players.Player;
 import mage.util.CardUtil;
 
+import java.util.UUID;
+
 /**
- *
  * @author noxx
  */
 public class ReturnToBattlefieldUnderYourControlTargetEffect extends OneShotEffect {
 
     private boolean fromExileZone;
+    private boolean tapped;
+    private boolean attacking;
 
     public ReturnToBattlefieldUnderYourControlTargetEffect() {
         this(false);
     }
 
-    /**
-     *
-     * @param fromExileZone - the card will only be returned if it's still in
-     * the source object specific exile zone
-     */
     public ReturnToBattlefieldUnderYourControlTargetEffect(boolean fromExileZone) {
+        this(fromExileZone, false, false);
+    }
+
+    /**
+     * @param fromExileZone - the card will only be returned if it's still in
+     *                      the source object specific exile zone
+     */
+    public ReturnToBattlefieldUnderYourControlTargetEffect(boolean fromExileZone, boolean tapped, boolean attacking) {
         super(Outcome.Benefit);
-        staticText = "return that card to the battlefield under your control";
         this.fromExileZone = fromExileZone;
+        this.tapped = tapped;
+        this.attacking = attacking;
+
+        updateText();
     }
 
     public ReturnToBattlefieldUnderYourControlTargetEffect(final ReturnToBattlefieldUnderYourControlTargetEffect effect) {
         super(effect);
         this.fromExileZone = effect.fromExileZone;
+        this.tapped = effect.tapped;
+        this.attacking = effect.attacking;
+
+        updateText();
+    }
+
+    private void updateText() {
+        this.staticText = "return that card to the battlefield under your control"
+                + (tapped ? " tapped" : "")
+                + (tapped && attacking ? " and" : "")
+                + (attacking ? " attacking" : "");
     }
 
     @Override
@@ -87,10 +79,9 @@ public class ReturnToBattlefieldUnderYourControlTargetEffect extends OneShotEffe
                         for (UUID targetId : this.getTargetPointer().getTargets(game, source)) {
                             if (exileZone.contains(targetId)) {
                                 cardsToBattlefield.add(targetId);
-                            }
-                            else {
+                            } else {
                                 Card card = game.getCard(targetId);
-                                if (card != null && card instanceof MeldCard) {
+                                if (card instanceof MeldCard) {
                                     MeldCard meldCard = (MeldCard) card;
                                     Card topCard = meldCard.getTopHalfCard();
                                     Card bottomCard = meldCard.getBottomHalfCard();
@@ -108,8 +99,13 @@ public class ReturnToBattlefieldUnderYourControlTargetEffect extends OneShotEffe
             } else {
                 cardsToBattlefield.addAll(getTargetPointer().getTargets(game, source));
             }
-            if (!cardsToBattlefield.isEmpty()) {
-                controller.moveCards(cardsToBattlefield, Zone.BATTLEFIELD, source, game);
+
+            for (Card card : cardsToBattlefield.getCards(game)) {
+                if (controller.moveCards(card, Zone.BATTLEFIELD, source, game, tapped, false, false, null)) {
+                    if (attacking) {
+                        game.getCombat().addAttackingCreature(card.getId(), game);
+                    }
+                }
             }
             return true;
         }

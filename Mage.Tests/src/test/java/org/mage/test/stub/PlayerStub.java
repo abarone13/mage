@@ -1,35 +1,7 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package org.mage.test.stub;
 
-import java.io.Serializable;
-import java.util.*;
 import mage.MageObject;
+import mage.MageObjectReference;
 import mage.abilities.*;
 import mage.abilities.costs.AlternativeSourceCosts;
 import mage.abilities.costs.Cost;
@@ -66,8 +38,10 @@ import mage.target.TargetAmount;
 import mage.target.TargetCard;
 import mage.target.common.TargetCardInLibrary;
 
+import java.io.Serializable;
+import java.util.*;
+
 /**
- *
  * @author Quercitron
  */
 public class PlayerStub implements Player {
@@ -161,6 +135,11 @@ public class PlayerStub implements Player {
 
     @Override
     public int gainLife(int amount, Game game, UUID sourceId) {
+        return 0;
+    }
+
+    @Override
+    public int damage(int damage, UUID sourceId, Game game) {
         return 0;
     }
 
@@ -564,7 +543,7 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public boolean cast(SpellAbility ability, Game game, boolean noMana) {
+    public boolean cast(SpellAbility ability, Game game, boolean noMana, MageObjectReference reference) {
         return false;
     }
 
@@ -604,13 +583,27 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public boolean searchLibrary(TargetCardInLibrary target, Game game) {
+    public boolean searchLibrary(TargetCardInLibrary target, Ability source, Game game) {
         return false;
     }
 
     @Override
-    public boolean searchLibrary(TargetCardInLibrary target, Game game, UUID targetPlayerId) {
+    public boolean searchLibrary(TargetCardInLibrary target, Ability source, Game game, boolean triggerEvents) {
         return false;
+    }
+
+    @Override
+    public boolean searchLibrary(TargetCardInLibrary target, Ability source, Game game, UUID targetPlayerId) {
+        return false;
+    }
+
+    @Override
+    public boolean searchLibrary(TargetCardInLibrary target, Ability source, Game game, UUID targetPlayerId, boolean triggerEvents) {
+        return false;
+    }
+
+    @Override
+    public void lookAtAllLibraries(Ability source, Game game) {
     }
 
     @Override
@@ -619,7 +612,7 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public boolean playCard(Card card, Game game, boolean noMana, boolean checkTiming) {
+    public boolean playCard(Card card, Game game, boolean noMana, boolean checkTiming, MageObjectReference reference) {
         return false;
     }
 
@@ -649,12 +642,12 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public boolean flipCoin(Game game) {
+    public boolean flipCoin(Ability source, Game game, boolean winnable) {
         return false;
     }
 
     @Override
-    public boolean flipCoin(Game game, ArrayList<UUID> appliedEffects) {
+    public boolean flipCoin(Ability source, Game game, boolean winnable, ArrayList<UUID> appliedEffects) {
         return false;
     }
 
@@ -759,12 +752,27 @@ public class PlayerStub implements Player {
     }
 
     @Override
+    public void revealCards(Ability source, Cards cards, Game game) {
+
+    }
+
+    @Override
     public void revealCards(String name, Cards cards, Game game) {
 
     }
 
     @Override
+    public void revealCards(Ability source, String name, Cards cards, Game game) {
+
+    }
+
+    @Override
     public void revealCards(String name, Cards cards, Game game, boolean postToLog) {
+
+    }
+
+    @Override
+    public void revealCards(Ability source, String name, Cards cards, Game game, boolean postToLog) {
 
     }
 
@@ -775,6 +783,11 @@ public class PlayerStub implements Player {
 
     @Override
     public void lookAtCards(String name, Cards cards, Game game) {
+
+    }
+
+    @Override
+    public void lookAtCards(Ability source, String name, Cards cards, Game game) {
 
     }
 
@@ -879,6 +892,11 @@ public class PlayerStub implements Player {
     }
 
     @Override
+    public boolean putCardsOnBottomOfLibrary(Card card, Game game, Ability source, boolean anyOrder) {
+        return false;
+    }
+
+    @Override
     public boolean putCardsOnBottomOfLibrary(Cards cards, Game game, Ability source, boolean anyOrder) {
         return false;
     }
@@ -889,13 +907,18 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public int announceXMana(int min, int max, String message, Game game, Ability ability) {
-        return 0;
+    public boolean putCardOnTopXOfLibrary(Card card, Game game, Ability source, int xFromTheTop) {
+        return true;
+    }
+
+    @Override
+    public int announceXMana(int min, int max, int multiplier, String message, Game game, Ability ability) {
+        return min;
     }
 
     @Override
     public int announceXCost(int min, int max, String message, Game game, Ability ability, VariableCost variableCost) {
-        return 0;
+        return min;
     }
 
     @Override
@@ -969,6 +992,11 @@ public class PlayerStub implements Player {
     }
 
     @Override
+    public void declareBlocker(UUID defenderId, UUID blockerId, UUID attackerId, Game game, boolean allowUndo) {
+
+    }
+
+    @Override
     public List<Permanent> getAvailableAttackers(Game game) {
         return null;
     }
@@ -1019,7 +1047,7 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public Set<UUID> getPlayableInHand(Game game) {
+    public Set<UUID> getPlayableObjects(Game game, Zone zone) {
         return null;
     }
 
@@ -1064,7 +1092,7 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public boolean lookAtFaceDownCard(Card card, Game game) {
+    public boolean lookAtFaceDownCard(Card card, Game game, int abilitiesToActivate) {
         return false;
     }
 
@@ -1214,8 +1242,13 @@ public class PlayerStub implements Player {
     }
 
     @Override
-    public boolean isRequestToShowHandCardsAllowed() {
+    public boolean isPlayerAllowedToRequestHand(UUID gameId, UUID requesterPlayerId) {
         return false;
+    }
+
+    @Override
+    public void addPlayerToRequestedHandList(UUID gameId, UUID requesterPlayerId) {
+        //
     }
 
     @Override
@@ -1240,6 +1273,11 @@ public class PlayerStub implements Player {
 
     @Override
     public boolean scry(int value, Ability source, Game game) {
+        return false;
+    }
+
+    @Override
+    public boolean surveil(int value, Ability source, Game game) {
         return false;
     }
 
@@ -1291,6 +1329,46 @@ public class PlayerStub implements Player {
     @Override
     public PlanarDieRoll rollPlanarDie(Game game, ArrayList<UUID> appliedEffects, int numberChaosSides, int numberPlanarSides) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public List<UUID> getTurnControllers() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void setGameUnderYourControl(boolean value, boolean fullRestore) {
+
+    }
+
+    @Override
+    public void setPayManaMode(boolean payManaMode) {
+
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Player obj = (Player) o;
+        if (this.getId() == null || obj.getId() == null) {
+            return false;
+        }
+
+        return this.getId().equals(obj.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 41 * hash + Objects.hashCode(this.id);
+        return hash;
     }
 
 }

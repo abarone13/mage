@@ -1,30 +1,4 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
+
 package mage.sets;
 
 import mage.cards.ExpansionSet;
@@ -35,7 +9,7 @@ import mage.constants.SetType;
  *
  * @author North
  */
-public class Scourge extends ExpansionSet {
+public final class Scourge extends ExpansionSet {
 
     private static final Scourge instance = new Scourge();
 
@@ -169,6 +143,7 @@ public class Scourge extends ExpansionSet {
         cards.add(new SetCardInfo("Soul Collector", 74, Rarity.RARE, mage.cards.s.SoulCollector.class));
         cards.add(new SetCardInfo("Spark Spray", 105, Rarity.COMMON, mage.cards.s.SparkSpray.class));
         cards.add(new SetCardInfo("Sprouting Vines", 128, Rarity.COMMON, mage.cards.s.SproutingVines.class));
+        cards.add(new SetCardInfo("Stabilizer", 142, Rarity.RARE, mage.cards.s.Stabilizer.class));
         cards.add(new SetCardInfo("Stifle", 52, Rarity.RARE, mage.cards.s.Stifle.class));
         cards.add(new SetCardInfo("Sulfuric Vortex", 106, Rarity.RARE, mage.cards.s.SulfuricVortex.class));
         cards.add(new SetCardInfo("Temple of the False God", 143, Rarity.UNCOMMON, mage.cards.t.TempleOfTheFalseGod.class));

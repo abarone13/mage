@@ -4,7 +4,7 @@ import mage.cards.ExpansionSet;
 import mage.constants.Rarity;
 import mage.constants.SetType;
 
-public class Apocalypse extends ExpansionSet {
+public final class Apocalypse extends ExpansionSet {
 
     private static final Apocalypse instance = new Apocalypse();
 
@@ -66,6 +66,7 @@ public class Apocalypse extends ExpansionSet {
         cards.add(new SetCardInfo("Flowstone Charger", 99, Rarity.UNCOMMON, mage.cards.f.FlowstoneCharger.class));
         cards.add(new SetCardInfo("Foul Presence", 39, Rarity.UNCOMMON, mage.cards.f.FoulPresence.class));
         cards.add(new SetCardInfo("Fungal Shambler", 100, Rarity.RARE, mage.cards.f.FungalShambler.class));
+        cards.add(new SetCardInfo("Gaea's Balance", 77, Rarity.UNCOMMON, mage.cards.g.GaeasBalance.class));
         cards.add(new SetCardInfo("Gaea's Skyfolk", 101, Rarity.COMMON, mage.cards.g.GaeasSkyfolk.class));
         cards.add(new SetCardInfo("Gerrard Capashen", 11, Rarity.RARE, mage.cards.g.GerrardCapashen.class));
         cards.add(new SetCardInfo("Gerrard's Verdict", 102, Rarity.UNCOMMON, mage.cards.g.GerrardsVerdict.class));
@@ -81,6 +82,7 @@ public class Apocalypse extends ExpansionSet {
         cards.add(new SetCardInfo("Illuminate", 63, Rarity.UNCOMMON, mage.cards.i.Illuminate.class));
         cards.add(new SetCardInfo("Illusion // Reality", 129, Rarity.UNCOMMON, mage.cards.i.IllusionReality.class));
         cards.add(new SetCardInfo("Index", 25, Rarity.COMMON, mage.cards.i.Index.class));
+        cards.add(new SetCardInfo("Jaded Response", 26, Rarity.COMMON, mage.cards.j.JadedResponse.class));
         cards.add(new SetCardInfo("Jilt", 27, Rarity.COMMON, mage.cards.j.Jilt.class));
         cards.add(new SetCardInfo("Jungle Barrier", 106, Rarity.UNCOMMON, mage.cards.j.JungleBarrier.class));
         cards.add(new SetCardInfo("Kavu Glider", 64, Rarity.COMMON, mage.cards.k.KavuGlider.class));
@@ -98,6 +100,7 @@ public class Apocalypse extends ExpansionSet {
         cards.add(new SetCardInfo("Manacles of Decay", 14, Rarity.COMMON, mage.cards.m.ManaclesOfDecay.class));
         cards.add(new SetCardInfo("Martyrs' Tomb", 110, Rarity.UNCOMMON, mage.cards.m.MartyrsTomb.class));
         cards.add(new SetCardInfo("Mask of Intolerance", 138, Rarity.RARE, mage.cards.m.MaskOfIntolerance.class));
+        cards.add(new SetCardInfo("Mind Extraction", 42, Rarity.COMMON, mage.cards.m.MindExtraction.class));
         cards.add(new SetCardInfo("Minotaur Illusionist", 111, Rarity.UNCOMMON, mage.cards.m.MinotaurIllusionist.class));
         cards.add(new SetCardInfo("Minotaur Tactician", 65, Rarity.COMMON, mage.cards.m.MinotaurTactician.class));
         cards.add(new SetCardInfo("Mournful Zombie", 43, Rarity.COMMON, mage.cards.m.MournfulZombie.class));

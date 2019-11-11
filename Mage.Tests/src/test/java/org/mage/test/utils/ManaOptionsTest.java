@@ -1,30 +1,3 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package org.mage.test.utils;
 
 import mage.abilities.mana.ManaOptions;
@@ -158,7 +131,7 @@ public class ManaOptionsTest extends CardTestPlayerBase {
         assertDuplicatedManaOptions(manaOptions);
 
         Assert.assertEquals("mana variations don't fit", 1, manaOptions.size());
-        assertManaOptions("{C}{W}{W}{G}{G}",  manaOptions);
+        assertManaOptions("{C}{W}{W}{G}{G}", manaOptions);
     }
 
     // Crystal Quarry
@@ -234,6 +207,48 @@ public class ManaOptionsTest extends CardTestPlayerBase {
 
         Assert.assertEquals("mana variations don't fit", 1, manaOptions.size());
         assertManaOptions("{C}{G}{Any}", manaOptions);
+    }
+
+    // Nykthos, Shrine to Nyx
+    // {T}: Add {C}.
+    // {2}, {T}: Choose a color. Add an amount of mana of that color equal to your devotion to that color. (Your devotion to a color is the number of mana symbols of that color in the mana costs of permanents you control.)
+    @Test
+    public void testNykthos4() {
+        // If a land is tapped for two or more mana, it produces {C} instead of any other type and amount.
+        // Each spell a player casts costs {1} more to cast for each other spell that player has cast this turn.
+        addCard(Zone.BATTLEFIELD, playerA, "Damping Sphere", 1);
+        addCard(Zone.BATTLEFIELD, playerA, "Sedge Scorpion", 4);
+        addCard(Zone.BATTLEFIELD, playerA, "Forest", 3);
+        addCard(Zone.BATTLEFIELD, playerA, "Nykthos, Shrine to Nyx", 1);
+
+        setStopAt(1, PhaseStep.UPKEEP);
+        execute();
+
+        ManaOptions manaOptions = playerA.getAvailableManaTest(currentGame);
+        assertDuplicatedManaOptions(manaOptions);
+
+        Assert.assertEquals("mana variations don't fit", 1, manaOptions.size());
+        assertManaOptions("{C}{G}{G}{G}", manaOptions);
+
+    }
+
+    @Test
+    public void testNykthos5() {
+        addCard(Zone.BATTLEFIELD, playerA, "Silvercoat Lion", 2);
+        addCard(Zone.BATTLEFIELD, playerA, "Sedge Scorpion", 4);
+        addCard(Zone.BATTLEFIELD, playerA, "Forest", 3);
+        addCard(Zone.BATTLEFIELD, playerA, "Nykthos, Shrine to Nyx", 1);
+
+        setStopAt(1, PhaseStep.UPKEEP);
+        execute();
+
+        ManaOptions manaOptions = playerA.getAvailableManaTest(currentGame);
+        assertDuplicatedManaOptions(manaOptions);
+
+        Assert.assertEquals("mana variations don't fit", 3, manaOptions.size());
+        assertManaOptions("{W}{W}{G}", manaOptions);
+        assertManaOptions("{C}{G}{G}{G}", manaOptions);
+        assertManaOptions("{G}{G}{G}{G}{G}", manaOptions);
     }
 
     @Test
@@ -401,4 +416,141 @@ public class ManaOptionsTest extends CardTestPlayerBase {
         Assert.assertEquals("mana variations don't fit", 1, manaOptions.size());
         assertManaOptions("{B}{B}", manaOptions);
     }
+
+    @Test
+    public void testDampingSphere() {
+        // If a land is tapped for two or more mana, it produces {C} instead of any other type and amount.
+        // Each spell a player casts costs {1} more to cast for each other spell that player has cast this turn.
+        addCard(Zone.BATTLEFIELD, playerA, "Damping Sphere", 1);
+        // {T}: Add {C}.
+        // {T}: Add {C}{C}. Spend this mana only to cast colorless Eldrazi spells or activate abilities of colorless Eldrazi.
+        addCard(Zone.BATTLEFIELD, playerA, "Eldrazi Temple", 1);
+
+        setStopAt(1, PhaseStep.UPKEEP);
+        execute();
+
+        ManaOptions manaOptions = playerA.getAvailableManaTest(currentGame);
+        assertDuplicatedManaOptions(manaOptions);
+
+        Assert.assertEquals("mana variations don't fit", 1, manaOptions.size());
+        assertManaOptions("{C}", manaOptions);
+    }
+
+    @Test
+    public void testCharmedPedant() {
+        // {T}, Put the top card of your library into your graveyard: For each colored mana symbol in that card's mana cost, add one mana of that color.
+        // Activate this ability only any time you could cast an instant.
+        addCard(Zone.BATTLEFIELD, playerA, "Charmed Pendant", 1);
+        // {T}: Add {C}.
+        // {T}: Add {C}{C}. Spend this mana only to cast colorless Eldrazi spells or activate abilities of colorless Eldrazi.
+        addCard(Zone.BATTLEFIELD, playerA, "Eldrazi Temple", 1);
+
+        setStopAt(1, PhaseStep.UPKEEP);
+        execute();
+
+        ManaOptions manaOptions = playerA.getAvailableManaTest(currentGame);
+        assertDuplicatedManaOptions(manaOptions);
+
+        Assert.assertEquals("mana variations don't fit", 1, manaOptions.size());
+        assertManaOptions("{C}{C}", manaOptions);
+    }
+
+    @Test
+    public void testManaSourcesWithCosts() {
+        // {T}: Add {C} to your mana pool.
+        // {5}, {T}: Add {W}{U}{B}{R}{G} to your mana pool.
+        addCard(Zone.BATTLEFIELD, playerA, "Crystal Quarry", 1);
+
+        // {T}: Add {C} to your mana pool.
+        // {W/B}, {T}: Add {W}{W}, {W}{B}, or {B}{B} to your mana pool.
+        addCard(Zone.BATTLEFIELD, playerA, "Fetid Heath", 3);
+        addCard(Zone.BATTLEFIELD, playerA, "Plains", 3);
+
+        setStopAt(1, PhaseStep.UPKEEP);
+        execute();
+
+        ManaOptions manaOptions = playerA.getAvailableManaTest(currentGame);
+        assertDuplicatedManaOptions(manaOptions);
+
+        Assert.assertEquals("mana variations don't fit", 16, manaOptions.size());
+        assertManaOptions("{C}{C}{C}{C}{W}{W}{W}", manaOptions);
+        assertManaOptions("{C}{C}{C}{W}{W}{W}{W}", manaOptions);
+        assertManaOptions("{C}{C}{C}{W}{W}{W}{B}", manaOptions);
+        assertManaOptions("{C}{C}{C}{W}{W}{B}{B}", manaOptions);
+        assertManaOptions("{C}{C}{W}{W}{W}{W}{W}", manaOptions);
+        assertManaOptions("{C}{C}{W}{W}{W}{W}{B}", manaOptions);
+        assertManaOptions("{C}{C}{W}{W}{W}{B}{B}", manaOptions);
+        assertManaOptions("{C}{C}{W}{W}{B}{B}{B}", manaOptions);
+        assertManaOptions("{C}{C}{W}{B}{B}{B}{B}", manaOptions);
+        assertManaOptions("{C}{W}{W}{W}{W}{W}{W}", manaOptions);
+        assertManaOptions("{C}{W}{W}{W}{W}{W}{B}", manaOptions);
+        assertManaOptions("{C}{W}{W}{W}{W}{B}{B}", manaOptions);
+        assertManaOptions("{C}{W}{W}{W}{B}{B}{B}", manaOptions);
+        assertManaOptions("{C}{W}{W}{B}{B}{B}{B}", manaOptions);
+        assertManaOptions("{C}{W}{B}{B}{B}{B}{B}", manaOptions);
+        assertManaOptions("{C}{B}{B}{B}{B}{B}{B}", manaOptions);
+    }
+
+    @Test
+    public void testSungrassPrairie() {
+        // {1}, {T}: Add {G}{W}.
+        addCard(Zone.BATTLEFIELD, playerA, "Sungrass Prairie", 1);
+        // {T}: Add one mana of any color to your mana pool.
+        addCard(Zone.BATTLEFIELD, playerA, "Alloy Myr", 2);
+
+        setStopAt(3, PhaseStep.PRECOMBAT_MAIN);
+        execute();
+
+        ManaOptions manaOptions = playerA.getAvailableManaTest(currentGame);
+        assertDuplicatedManaOptions(manaOptions);
+
+        Assert.assertEquals("mana variations don't fit", 2, manaOptions.size());
+
+        assertManaOptions("{W}{G}{Any}", manaOptions);
+        assertManaOptions("{Any}{Any}", manaOptions);
+    }
+
+    @Test
+    public void testSungrassPrairie2() {
+        // {1}, {T}: Add {G}{W}.
+        addCard(Zone.BATTLEFIELD, playerA, "Sungrass Prairie", 5);
+        // ({T}: Add {U} or {W} to your mana pool.)
+        addCard(Zone.BATTLEFIELD, playerA, "Tundra", 9);
+        // ({T}: Add {G} or {U} to your mana pool.)
+        addCard(Zone.BATTLEFIELD, playerA, "Tropical Island", 3);
+
+        setStopAt(3, PhaseStep.PRECOMBAT_MAIN);
+        execute();
+
+        ManaOptions manaOptions = playerA.getAvailableManaTest(currentGame);
+        assertDuplicatedManaOptions(manaOptions);
+
+        Assert.assertEquals("mana variations don't fit", 88, manaOptions.size());
+
+        assertManaOptions("{W}{W}{W}{W}{W}{W}{W}{W}{W}{G}{G}{G}{G}{G}{G}{G}{G}", manaOptions);
+        assertManaOptions("{W}{W}{W}{W}{W}{W}{W}{W}{U}{G}{G}{G}{G}{G}{G}{G}{G}", manaOptions);
+    }
+
+    @Test
+    public void testSungrassPrairie3() {
+        // {1}, {T}: Add {G}{W}.
+        addCard(Zone.BATTLEFIELD, playerA, "Sungrass Prairie", 1);
+        // ({T}: Add {U} or {W} to your mana pool.)
+        addCard(Zone.BATTLEFIELD, playerA, "Tundra", 1);
+        // ({T}: Add {G} or {U} to your mana pool.)
+        addCard(Zone.BATTLEFIELD, playerA, "Tropical Island", 1);
+
+        setStopAt(3, PhaseStep.PRECOMBAT_MAIN);
+        execute();
+
+        ManaOptions manaOptions = playerA.getAvailableManaTest(currentGame);
+        assertDuplicatedManaOptions(manaOptions);
+
+        Assert.assertEquals("mana variations don't fit", 4, manaOptions.size());
+        assertManaOptions("{U}{U}", manaOptions);
+        assertManaOptions("{W}{G}{G}", manaOptions);
+        assertManaOptions("{W}{U}{G}", manaOptions);
+        assertManaOptions("{W}{W}{G}", manaOptions);
+    }
+
 }

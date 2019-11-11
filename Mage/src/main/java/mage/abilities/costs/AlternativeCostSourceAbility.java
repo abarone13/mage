@@ -1,33 +1,6 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
+
 package mage.abilities.costs;
 
-import java.util.Iterator;
 import mage.abilities.Ability;
 import mage.abilities.SpellAbility;
 import mage.abilities.StaticAbility;
@@ -42,13 +15,14 @@ import mage.game.Game;
 import mage.players.Player;
 import mage.util.CardUtil;
 
+import java.util.Iterator;
+
 /**
- *
  * @author LevelX2
  */
 public class AlternativeCostSourceAbility extends StaticAbility implements AlternativeSourceCosts {
 
-    Costs<AlternativeCost2> alternateCosts = new CostsImpl<>();
+    private Costs<AlternativeCost2> alternateCosts = new CostsImpl<>();
     protected Condition condition;
     protected String rule;
     protected FilterCard filter;
@@ -72,14 +46,13 @@ public class AlternativeCostSourceAbility extends StaticAbility implements Alter
     }
 
     /**
-     *
-     * @param cost alternate cost to pay
+     * @param cost      alternate cost to pay
      * @param condition only if the condition is true it's possible to use the
-     * alternate costs
-     * @param rule if != null used as rule text
-     * @param filter filters the cards this alternate cost can be applied to
-     * @param onlyMana if true only the mana costs are replaced by this costs,
-     * other costs stay untouched
+     *                  alternate costs
+     * @param rule      if != null used as rule text
+     * @param filter    filters the cards this alternate cost can be applied to
+     * @param onlyMana  if true only the mana costs are replaced by this costs,
+     *                  other costs stay untouched
      */
     public AlternativeCostSourceAbility(Cost cost, Condition condition, String rule, FilterCard filter, boolean onlyMana) {
         super(Zone.ALL, null);
@@ -175,10 +148,9 @@ public class AlternativeCostSourceAbility extends StaticAbility implements Alter
                     if (!onlyMana) {
                         ability.getCosts().clear();
                     }
-                    for (Cost cost : alternativeCostsToCheck) {
-                        AlternativeCost2 alternateCost = (AlternativeCost2) cost;
+                    for (AlternativeCost2 alternateCost : alternativeCostsToCheck) {
                         alternateCost.activate();
-                        for (Iterator it = ((Costs) alternateCost).iterator(); it.hasNext();) {
+                        for (Iterator it = ((Costs) alternateCost).iterator(); it.hasNext(); ) {
                             Cost costDeailed = (Cost) it.next();
                             if (costDeailed instanceof ManaCost) {
                                 ability.getManaCostsToPay().add((ManaCost) costDeailed.copy());
@@ -249,14 +221,15 @@ public class AlternativeCostSourceAbility extends StaticAbility implements Alter
                 if (alternativeCost.getCost() instanceof ManaCost) {
                     sb.append("pay ");
                 }
-                sb.append(alternativeCost.getText(true));
+                String text = alternativeCost.getText(true);
+                sb.append(Character.toLowerCase(text.charAt(0)) + text.substring(1));
             }
             ++numberCosts;
         }
         if (condition == null || alternateCosts.size() == 1) {
             sb.append(" rather than pay this spell's mana cost");
         } else if (alternateCosts.isEmpty()) {
-            sb.append("cast {this} without paying its mana cost");
+            sb.append("cast this spell without paying its mana cost");
         }
         sb.append('.');
         if (numberCosts == 1 && remarkText != null) {

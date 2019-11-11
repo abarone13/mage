@@ -21,13 +21,13 @@ import mage.filter.predicate.permanent.AnotherPredicate;
  *
  * @author Rystan
  */
-public class GuardiansOfKoilos extends CardImpl {
+public final class GuardiansOfKoilos extends CardImpl {
 
     private static final FilterControlledPermanent filter = new FilterControlledPermanent("another historic permanent you control");
 
     static {
-        filter.add(new AnotherPredicate());
-        filter.add(new HistoricPredicate());
+        filter.add(AnotherPredicate.instance);
+        filter.add(HistoricPredicate.instance);
     }
 
     public GuardiansOfKoilos(UUID ownerId, CardSetInfo setInfo) {
@@ -36,7 +36,7 @@ public class GuardiansOfKoilos extends CardImpl {
         this.power = new MageInt(4);
         this.toughness = new MageInt(4);
 
-        // When Guardians of Koilos enters the battlefield, you may return another target historic permanent you control to its owner’s hand.
+        // When Guardians of Koilos enters the battlefield, you may return another target historic permanent you control to its owner's hand.
         this.addAbility(new EntersBattlefieldTriggeredAbility(new ReturnToHandChosenControlledPermanentEffect(filter)
                 .setText("you may return another target historic permanent you control to its owner's hand. <i>(Artifacts, legendaries, and Sagas are historic.)</i>"), true));
     }

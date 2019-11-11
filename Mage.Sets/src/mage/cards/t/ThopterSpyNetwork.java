@@ -1,35 +1,6 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
+
 package mage.cards.t;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import mage.abilities.TriggeredAbilityImpl;
 import mage.abilities.effects.common.CreateTokenEffect;
 import mage.abilities.effects.common.DrawCardSourceControllerEffect;
@@ -44,11 +15,14 @@ import mage.game.events.GameEvent;
 import mage.game.permanent.Permanent;
 import mage.game.permanent.token.ThopterColorlessToken;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 /**
- *
  * @author fireshoes
  */
-public class ThopterSpyNetwork extends CardImpl {
+public final class ThopterSpyNetwork extends CardImpl {
 
     public ThopterSpyNetwork(UUID ownerId, CardSetInfo setInfo) {
         super(ownerId, setInfo, new CardType[]{CardType.ENCHANTMENT}, "{2}{U}{U}");
@@ -60,7 +34,7 @@ public class ThopterSpyNetwork extends CardImpl {
         this.addAbility(new ThopterSpyNetworkDamageTriggeredAbility());
     }
 
-    public ThopterSpyNetwork(final ThopterSpyNetwork card) {
+    private ThopterSpyNetwork(final ThopterSpyNetwork card) {
         super(card);
     }
 
@@ -72,11 +46,11 @@ public class ThopterSpyNetwork extends CardImpl {
 
 class ThopterSpyNetworkUpkeepTriggeredAbility extends TriggeredAbilityImpl {
 
-    public ThopterSpyNetworkUpkeepTriggeredAbility() {
+    ThopterSpyNetworkUpkeepTriggeredAbility() {
         super(Zone.BATTLEFIELD, new CreateTokenEffect(new ThopterColorlessToken(), 1), false);
     }
 
-    public ThopterSpyNetworkUpkeepTriggeredAbility(final ThopterSpyNetworkUpkeepTriggeredAbility ability) {
+    private ThopterSpyNetworkUpkeepTriggeredAbility(final ThopterSpyNetworkUpkeepTriggeredAbility ability) {
         super(ability);
     }
 
@@ -108,13 +82,13 @@ class ThopterSpyNetworkUpkeepTriggeredAbility extends TriggeredAbilityImpl {
 
 class ThopterSpyNetworkDamageTriggeredAbility extends TriggeredAbilityImpl {
 
-    List<UUID> damagedPlayerIds = new ArrayList<>();
+    private final List<UUID> damagedPlayerIds = new ArrayList<>();
 
-    public ThopterSpyNetworkDamageTriggeredAbility() {
+    ThopterSpyNetworkDamageTriggeredAbility() {
         super(Zone.BATTLEFIELD, new DrawCardSourceControllerEffect(1), false);
     }
 
-    public ThopterSpyNetworkDamageTriggeredAbility(final ThopterSpyNetworkDamageTriggeredAbility ability) {
+    private ThopterSpyNetworkDamageTriggeredAbility(final ThopterSpyNetworkDamageTriggeredAbility ability) {
         super(ability);
     }
 
@@ -126,7 +100,7 @@ class ThopterSpyNetworkDamageTriggeredAbility extends TriggeredAbilityImpl {
     @Override
     public boolean checkEventType(GameEvent event, Game game) {
         return event.getType() == GameEvent.EventType.DAMAGED_PLAYER
-                || event.getType() == GameEvent.EventType.END_COMBAT_STEP_POST;
+                || event.getType() == GameEvent.EventType.COMBAT_DAMAGE_STEP_POST;
     }
 
     @Override
@@ -134,14 +108,14 @@ class ThopterSpyNetworkDamageTriggeredAbility extends TriggeredAbilityImpl {
         if (event.getType() == GameEvent.EventType.DAMAGED_PLAYER) {
             if (((DamagedPlayerEvent) event).isCombatDamage()) {
                 Permanent creature = game.getPermanent(event.getSourceId());
-                if (creature != null && creature.getControllerId().equals(controllerId)
+                if (creature != null && creature.isControlledBy(controllerId)
                         && creature.isArtifact() && !damagedPlayerIds.contains(event.getTargetId())) {
                     damagedPlayerIds.add(event.getTargetId());
                     return true;
                 }
             }
         }
-        if (event.getType() == GameEvent.EventType.END_COMBAT_STEP_POST) {
+        if (event.getType() == GameEvent.EventType.COMBAT_DAMAGE_STEP_POST) {
             damagedPlayerIds.clear();
         }
         return false;

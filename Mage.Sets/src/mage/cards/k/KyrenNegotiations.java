@@ -19,12 +19,12 @@ import mage.target.common.TargetPlayerOrPlaneswalker;
  *
  * @author ingmargoudt
  */
-public class KyrenNegotiations extends CardImpl {
+public final class KyrenNegotiations extends CardImpl {
 
     private static final FilterControlledCreaturePermanent filter = new FilterControlledCreaturePermanent("untapped creature you control");
 
     static {
-        filter.add(Predicates.not(new TappedPredicate()));
+        filter.add(Predicates.not(TappedPredicate.instance));
     }
 
     public KyrenNegotiations(UUID ownerId, CardSetInfo setInfo) {

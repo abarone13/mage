@@ -1,30 +1,3 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.abilities.effects.common;
 
 import mage.abilities.Ability;
@@ -51,14 +24,13 @@ import java.util.UUID;
 
 /**
  * Effect for the DevourAbility
- *
+ * <p>
  * 702.81. Devour 702.81a Devour is a static ability. "Devour N" means "As this
  * object enters the battlefield, you may sacrifice any number of creatures.
  * This permanent enters the battlefield with N +1/+1 counters on it for each
  * creature sacrificed this way." 702.81b Some objects have abilities that refer
  * to the number of creatures the permanent devoured. "It devoured" means
  * "sacrificed as a result of its devour ability as it entered the battlefield."
- *
  *
  * @author LevelX2
  */
@@ -67,8 +39,9 @@ public class DevourEffect extends ReplacementEffectImpl {
     private static final FilterControlledCreaturePermanent filter = new FilterControlledCreaturePermanent("creatures to devour");
 
     static {
-        filter.add(new AnotherPredicate());
+        filter.add(AnotherPredicate.instance);
     }
+
     private final DevourFactor devourFactor;
 
     public DevourEffect(DevourFactor devourFactor) {
@@ -151,10 +124,10 @@ public class DevourEffect extends ReplacementEffectImpl {
         return sb.toString();
     }
 
-    public List<ArrayList<String>> getSubtypes(Game game, UUID permanentId) {
+    public List<SubTypeList> getSubtypes(Game game, UUID permanentId) {
         Object object = game.getState().getValue(permanentId.toString() + "devoured");
         if (object != null) {
-            return (List<ArrayList<String>>) object;
+            return (List<SubTypeList>) object;
         }
         return Collections.emptyList();
     }
@@ -162,7 +135,7 @@ public class DevourEffect extends ReplacementEffectImpl {
     public int getDevouredCreaturesAmount(Game game, UUID permanentId) {
         Object object = game.getState().getValue(permanentId.toString() + "devoured");
         if (object != null) {
-            return ((List<ArrayList<String>>) object).size();
+            return ((List<SubTypeList>) object).size();
         }
         return 0;
     }

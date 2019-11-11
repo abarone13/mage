@@ -1,13 +1,14 @@
 package mage.watchers.common;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
 import mage.constants.WatcherScope;
 import mage.game.Game;
 import mage.game.events.GameEvent;
 import mage.game.permanent.Permanent;
 import mage.watchers.Watcher;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author BetaSteward_at_googlemail.com
@@ -15,14 +16,14 @@ import mage.watchers.Watcher;
  */
 public class LandfallWatcher extends Watcher {
 
-    final Set<UUID> playerPlayedLand = new HashSet<>(); // player that had a land enter the battlefield
-    final Set<UUID> landEnteredBattlefield = new HashSet<>(); // land played
+    private final Set<UUID> playerPlayedLand = new HashSet<>(); // player that had a land enter the battlefield
+    private final Set<UUID> landEnteredBattlefield = new HashSet<>(); // land played
 
     public LandfallWatcher() {
-        super(LandfallWatcher.class.getSimpleName(), WatcherScope.GAME);
+        super(WatcherScope.GAME);
     }
 
-    public LandfallWatcher(final LandfallWatcher watcher) {
+    private LandfallWatcher(final LandfallWatcher watcher) {
         super(watcher);
         playerPlayedLand.addAll(watcher.playerPlayedLand);
         landEnteredBattlefield.addAll(watcher.landEnteredBattlefield);
@@ -48,9 +49,9 @@ public class LandfallWatcher extends Watcher {
 
     @Override
     public void reset() {
+        super.reset();
         playerPlayedLand.clear();
         landEnteredBattlefield.clear();
-        super.reset();
     }
 
     public boolean landPlayed(UUID playerId) {

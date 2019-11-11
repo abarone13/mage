@@ -1,7 +1,5 @@
 package mage.cards.y;
 
-import java.util.UUID;
-
 import mage.abilities.Ability;
 import mage.abilities.common.LegendarySpellAbility;
 import mage.abilities.effects.OneShotEffect;
@@ -9,7 +7,10 @@ import mage.abilities.effects.common.ExileSpellEffect;
 import mage.cards.Card;
 import mage.cards.CardImpl;
 import mage.cards.CardSetInfo;
-import mage.constants.*;
+import mage.constants.CardType;
+import mage.constants.Outcome;
+import mage.constants.SuperType;
+import mage.constants.Zone;
 import mage.filter.common.FilterCreatureOrPlaneswalkerPermanent;
 import mage.filter.common.FilterPermanentCard;
 import mage.filter.predicate.Predicates;
@@ -20,10 +21,12 @@ import mage.players.Player;
 import mage.target.common.TargetCardInGraveyard;
 import mage.target.common.TargetCreatureOrPlaneswalker;
 
+import java.util.UUID;
+
 /**
  * @author JRHerlehy Created on 4/8/18.
  */
-public class YawgmothsVileOffering extends CardImpl {
+public final class YawgmothsVileOffering extends CardImpl {
 
     private static final FilterPermanentCard cardFilter = new FilterPermanentCard("creature or planeswalker card");
 
@@ -42,7 +45,7 @@ public class YawgmothsVileOffering extends CardImpl {
         this.addAbility(new LegendarySpellAbility());
 
         // Put up to one target creature or planeswalker from a graveyard onto the battlefield under your control.
-        // Destroy up to one target creature or planeswalker. Exile Yawgmoth’s Vile Offering.
+        // Destroy up to one target creature or planeswalker. Exile Yawgmoth's Vile Offering.
         this.getSpellAbility().addEffect(new YawgmothsVileOfferingEffect());
         this.getSpellAbility().addTarget(new TargetCardInGraveyard(0, 1, cardFilter));
         this.getSpellAbility().addTarget(new TargetCreatureOrPlaneswalker(0, 1, new FilterCreatureOrPlaneswalkerPermanent(), false));
@@ -78,7 +81,6 @@ class YawgmothsVileOfferingEffect extends OneShotEffect {
         }
 
         Card returnCard = game.getCard(source.getTargets().getFirstTarget());
-
         if (returnCard != null) {
             controller.moveCards(returnCard, Zone.BATTLEFIELD, source, game);
         }

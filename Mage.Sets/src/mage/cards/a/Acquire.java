@@ -19,7 +19,7 @@ import mage.target.common.TargetOpponent;
 /**
  * @author andyfries
  */
-public class Acquire extends CardImpl {
+public final class Acquire extends CardImpl {
 
     public Acquire(UUID ownerId, CardSetInfo setInfo) {
         super(ownerId,setInfo,new CardType[]{CardType.SORCERY},"{3}{U}{U}");
@@ -63,7 +63,7 @@ class AcquireEffect extends OneShotEffect {
         Player controller = game.getPlayer(source.getControllerId());
         if (opponent != null && controller != null) {
             TargetCardInLibrary target = new TargetCardInLibrary(filter);
-            controller.searchLibrary(target, game, opponent.getId());
+            controller.searchLibrary(target, source, game, opponent.getId());
             Card targetCard = game.getCard(target.getFirstTarget());
             if (targetCard != null) {
                 controller.moveCards(targetCard, Zone.BATTLEFIELD, source, game);

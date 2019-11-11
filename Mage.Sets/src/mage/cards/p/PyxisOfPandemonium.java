@@ -1,36 +1,8 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.cards.p;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import mage.MageObject;
 import mage.abilities.Ability;
 import mage.abilities.common.SimpleActivatedAbility;
 import mage.abilities.costs.common.SacrificeSourceCost;
@@ -43,6 +15,7 @@ import mage.constants.Outcome;
 import mage.constants.Zone;
 import mage.game.ExileZone;
 import mage.game.Game;
+import mage.game.permanent.Permanent;
 import mage.players.Player;
 import mage.util.CardUtil;
 
@@ -50,15 +23,22 @@ import mage.util.CardUtil;
  *
  * @author LevelX2
  */
-public class PyxisOfPandemonium extends CardImpl {
+public final class PyxisOfPandemonium extends CardImpl {
 
     public PyxisOfPandemonium(UUID ownerId, CardSetInfo setInfo) {
-        super(ownerId,setInfo,new CardType[]{CardType.ARTIFACT},"{1}");
+        super(ownerId, setInfo, new CardType[]{CardType.ARTIFACT}, "{1}");
 
         // {T}: Each player exiles the top card of their library face down.
-        this.addAbility(new SimpleActivatedAbility(Zone.BATTLEFIELD, new PyxisOfPandemoniumExileEffect(), new TapSourceCost()));
+        this.addAbility(new SimpleActivatedAbility(
+                Zone.BATTLEFIELD,
+                new PyxisOfPandemoniumExileEffect(),
+                new TapSourceCost()));
+
         // {7}, {T}, Sacrifice Pyxis of Pandemonium: Each player turns face up all cards he or she owns exiled with Pyxis of Pandemonium, then puts all permanent cards among them onto the battlefield.
-        Ability ability = new SimpleActivatedAbility(Zone.BATTLEFIELD, new PyxisOfPandemoniumPutOntoBattlefieldEffect(), new GenericManaCost(7));
+        Ability ability = new SimpleActivatedAbility(
+                Zone.BATTLEFIELD,
+                new PyxisOfPandemoniumPutOntoBattlefieldEffect(),
+                new GenericManaCost(7));
         ability.addCost(new TapSourceCost());
         ability.addCost(new SacrificeSourceCost());
         this.addAbility(ability);
@@ -94,31 +74,34 @@ class PyxisOfPandemoniumExileEffect extends OneShotEffect {
     @Override
     public boolean apply(Game game, Ability source) {
         Player controller = game.getPlayer(source.getControllerId());
-        MageObject sourceObject = source.getSourceObject(game);
-        if (sourceObject != null && controller != null) {
+        Permanent pyxis = game.getPermanentOrLKIBattlefield(source.getSourceId());
+        if (pyxis != null
+                && controller != null) {
             Map<String, UUID> exileIds;
-            String valueKey = CardUtil.getObjectZoneString("exileIds", sourceObject, game);
+            String valueKey = CardUtil.getObjectZoneString("exileIds", pyxis, game);
             Object object = game.getState().getValue(valueKey);
-            if (object != null && object instanceof Map) {
+            if (object instanceof Map) {
                 exileIds = (Map<String, UUID>) object;
             } else {
                 exileIds = new HashMap<>();
                 game.getState().setValue(valueKey, exileIds);
             }
-
-            for (UUID playerId : game.getState().getPlayersInRange(controller.getId(), game)) {
-
+            game.getState().getPlayersInRange(controller.getId(), game).forEach((playerId) -> {
                 Player player = game.getPlayer(playerId);
                 if (player != null) {
                     if (player.getLibrary().hasCards()) {
                         Card card = player.getLibrary().getFromTop(game);
-                        String exileKey = playerId.toString() + CardUtil.getExileZoneId(game, source.getSourceId(), source.getSourceObjectZoneChangeCounter()).toString();
+                        String exileKey = playerId.toString()
+                                + CardUtil.getExileZoneId(game,
+                                        source.getSourceId(),
+                                        pyxis.getZoneChangeCounter(game));
                         UUID exileId = exileIds.computeIfAbsent(exileKey, k -> UUID.randomUUID());
-                        player.moveCardsToExile(card, source, game, false, exileId, sourceObject.getIdName() + " (" + player.getName() + ')');
+                        player.moveCardsToExile(card, source, game, false,
+                                exileId, pyxis.getIdName() + " (" + player.getName() + ')');
                         card.setFaceDown(true, game);
                     }
                 }
-            }
+            });
             return true;
         }
         return false;
@@ -129,7 +112,8 @@ class PyxisOfPandemoniumPutOntoBattlefieldEffect extends OneShotEffect {
 
     public PyxisOfPandemoniumPutOntoBattlefieldEffect() {
         super(Outcome.PutCardInPlay);
-        this.staticText = "Each player turns face up all cards he or she owns exiled with {this}, then puts all permanent cards among them onto the battlefield";
+        this.staticText = "Each player turns face up all cards he or she owns exiled with {this}, "
+                + "then puts all permanent cards among them onto the battlefield";
     }
 
     public PyxisOfPandemoniumPutOntoBattlefieldEffect(final PyxisOfPandemoniumPutOntoBattlefieldEffect effect) {
@@ -144,35 +128,38 @@ class PyxisOfPandemoniumPutOntoBattlefieldEffect extends OneShotEffect {
     @Override
     public boolean apply(Game game, Ability source) {
         Player controller = game.getPlayer(source.getControllerId());
-        MageObject sourceObject = source.getSourceObject(game);
-        if (controller != null && sourceObject != null) {
+        Permanent pyxis = game.getPermanentOrLKIBattlefield(source.getSourceId());
+        if (controller != null
+                && pyxis != null) {
             Map<String, UUID> exileIds;
-            String valueKey = CardUtil.getObjectZoneString("exileIds", sourceObject, game);
+            String valueKey = CardUtil.getObjectZoneString("exileIds", pyxis, game);
             Object object = game.getState().getValue(valueKey);
-            if (object != null && object instanceof Map) {
+            if (object instanceof Map) {
                 exileIds = (Map<String, UUID>) object;
             } else {
                 return true;
             }
             Cards cardsToBringIntoPlay = new CardsImpl();
-            for (UUID playerId : game.getState().getPlayersInRange(controller.getId(), game)) {
+            game.getState().getPlayersInRange(controller.getId(), game).forEach((playerId) -> {
                 Player player = game.getPlayer(playerId);
                 if (player != null) {
-                    String exileKey = playerId.toString() + CardUtil.getExileZoneId(game, source.getSourceId(), source.getSourceObjectZoneChangeCounter()).toString();
+                    String exileKey = playerId.toString() + CardUtil.getExileZoneId(game,
+                            source.getSourceId(),
+                            pyxis.getZoneChangeCounter(game));
                     UUID exileId = exileIds.get(exileKey);
                     if (exileId != null) {
                         ExileZone exileZone = game.getState().getExile().getExileZone(exileId);
                         if (exileZone != null) {
-                            for (Card card : exileZone.getCards(game)) {
+                            exileZone.getCards(game).stream().map((card) -> {
                                 card.setFaceDown(false, game);
-                                if (card.isPermanent()) {
-                                    cardsToBringIntoPlay.add(card);
-                                }
-                            }
+                                return card;
+                            }).filter((card) -> (card.isPermanent())).forEachOrdered((card) -> {
+                                cardsToBringIntoPlay.add(card);
+                            });
                         }
                     }
                 }
-            }
+            });
             controller.moveCards(cardsToBringIntoPlay.getCards(game), Zone.BATTLEFIELD, source, game, false, false, true, null);
             return true;
         }

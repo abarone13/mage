@@ -1,33 +1,7 @@
-/*
- * Copyright 2012 BetaSteward_at_googlemail.com. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are those of the
- * authors and should not be interpreted as representing official policies, either expressed
- * or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.client.cards;
 
 import mage.cards.MageCard;
+import mage.client.dialog.PreferencesDialog;
 import mage.client.plugins.impl.Plugins;
 import mage.client.util.ClientEventType;
 import mage.client.util.Event;
@@ -56,6 +30,9 @@ public class CardArea extends JPanel implements MouseListener {
     private int yCardCaptionOffsetPercent = 0; // card caption offset (use for moving card caption view center, below mana icons -- for more good UI)
     private Dimension cardDimension;
     private int verticalCardOffset;
+
+    private int customRenderMode = -1; // custom render mode tests
+    private Dimension customCardSize = null; // custom size for tests
 
     /**
      * Create the panel.
@@ -89,12 +66,24 @@ public class CardArea extends JPanel implements MouseListener {
     }
 
     private void setGUISize() {
-        setCardDimension(GUISizeHelper.otherZonesCardDimension, GUISizeHelper.otherZonesCardVerticalOffset);
+        if (customCardSize != null) {
+            setCardDimension(customCardSize, GUISizeHelper.otherZonesCardVerticalOffset);
+        } else {
+            setCardDimension(GUISizeHelper.otherZonesCardDimension, GUISizeHelper.otherZonesCardVerticalOffset);
+        }
     }
 
     public void setCardDimension(Dimension dimension, int verticalCardOffset) {
         this.cardDimension = dimension;
         this.verticalCardOffset = verticalCardOffset;
+    }
+
+    private void fixDialogSize() {
+        // fix panel size (must include scrolls)
+        Dimension newSize = new Dimension(cardArea.getPreferredSize());
+        newSize.width += 20;
+        newSize.height += 20;
+        this.setPreferredSize(newSize);
     }
 
     public void loadCards(CardsView showCards, BigCard bigCard, UUID gameId) {
@@ -111,6 +100,8 @@ public class CardArea extends JPanel implements MouseListener {
 
         this.revalidate();
         this.repaint();
+
+        fixDialogSize();
     }
 
     public void loadCardsNarrow(CardsView showCards, BigCard bigCard, UUID gameId) {
@@ -124,6 +115,8 @@ public class CardArea extends JPanel implements MouseListener {
 
         this.revalidate();
         this.repaint();
+
+        fixDialogSize();
     }
 
     private void loadCardsFew(CardsView showCards, BigCard bigCard, UUID gameId) {
@@ -132,7 +125,7 @@ public class CardArea extends JPanel implements MouseListener {
             addCard(card, bigCard, gameId, rectangle);
             rectangle.translate(cardDimension.width, 0);
         }
-        cardArea.setPreferredSize(new Dimension(cardDimension.width * showCards.size(), cardDimension.height));
+        cardArea.setPreferredSize(new Dimension(cardDimension.width * showCards.size(), cardDimension.height + verticalCardOffset));
     }
 
     private void addCard(CardView card, BigCard bigCard, UUID gameId, Rectangle rectangle) {
@@ -144,7 +137,8 @@ public class CardArea extends JPanel implements MouseListener {
             tmp.setAbility(card); // cross-reference, required for ability picker
             card = tmp;
         }
-        MageCard cardPanel = Plugins.instance.getMageCard(card, bigCard, cardDimension, gameId, true, true);
+        MageCard cardPanel = Plugins.instance.getMageCard(card, bigCard, cardDimension, gameId, true, true,
+                customRenderMode != -1 ? customRenderMode : PreferencesDialog.getRenderMode());
 
         cardPanel.setBounds(rectangle);
         cardPanel.addMouseListener(this);
@@ -247,7 +241,7 @@ public class CardArea extends JPanel implements MouseListener {
                     if (e.isAltDown()) {
                         cardEventSource.fireEvent(((MageCard) obj).getOriginal(), ClientEventType.ALT_DOUBLE_CLICK);
                     } else {
-                        cardEventSource.fireEvent(((MageCard) obj).getOriginal(),ClientEventType.DOUBLE_CLICK);
+                        cardEventSource.fireEvent(((MageCard) obj).getOriginal(), ClientEventType.DOUBLE_CLICK);
                     }
                 }
             }
@@ -278,6 +272,14 @@ public class CardArea extends JPanel implements MouseListener {
             Me.consume();
             cardEventSource.fireEvent(card, Me.getComponent(), Me.getX(), Me.getY(), ClientEventType.SHOW_POP_UP_MENU);
         }
+    }
+
+    public void setCustomRenderMode(int customRenderMode) {
+        this.customRenderMode = customRenderMode;
+    }
+
+    public void setCustomCardSize(Dimension customCardSize) {
+        this.customCardSize = customCardSize;
     }
 
     @Override

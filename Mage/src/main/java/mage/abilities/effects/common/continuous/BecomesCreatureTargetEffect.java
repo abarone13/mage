@@ -1,30 +1,3 @@
-/*
- *  Copyright 2011 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.abilities.effects.common.continuous;
 
 import mage.abilities.Ability;
@@ -33,7 +6,6 @@ import mage.abilities.effects.ContinuousEffectImpl;
 import mage.constants.*;
 import mage.game.Game;
 import mage.game.permanent.Permanent;
-import mage.game.permanent.token.TokenImpl;
 import mage.game.permanent.token.Token;
 import mage.target.Target;
 import mage.util.CardUtil;
@@ -48,26 +20,43 @@ public class BecomesCreatureTargetEffect extends ContinuousEffectImpl {
     protected Token token;
     protected boolean loseAllAbilities;
     protected boolean addStillALandText;
+    protected boolean loseName;
+    protected boolean keepAbilities;
+
+
+    public BecomesCreatureTargetEffect(Token token, boolean loseAllAbilities, boolean stillALand, Duration duration) {
+        this(token, loseAllAbilities, stillALand, duration, false);
+    }
+
+    public BecomesCreatureTargetEffect(Token token, boolean loseAllAbilities, boolean stillALand, Duration duration, boolean loseName) {
+        this(token, loseAllAbilities, stillALand, duration, loseName, false);
+    }
 
     /**
-     *
      * @param token
-     * @param loseAllAbilities loses all subtypes and colors
-     * @param stillALand add rule text, "it's still a land"
+     * @param loseAllAbilities loses all subtypes, colors and abilities
+     * @param stillALand       add rule text, "it's still a land"
+     * @param loseName         permanent lose name and get's it from token
+     * @param keepAbilities    lose types/colors, but keep abilities (example: Scale Up)
      * @param duration
      */
-    public BecomesCreatureTargetEffect(Token token, boolean loseAllAbilities, boolean stillALand, Duration duration) {
+    public BecomesCreatureTargetEffect(Token token, boolean loseAllAbilities, boolean stillALand, Duration duration, boolean loseName,
+        boolean keepAbilities) {
         super(duration, Outcome.BecomeCreature);
         this.token = token;
         this.loseAllAbilities = loseAllAbilities;
         this.addStillALandText = stillALand;
+        this.loseName = loseName;
+        this.keepAbilities = keepAbilities;
     }
 
     public BecomesCreatureTargetEffect(final BecomesCreatureTargetEffect effect) {
         super(effect);
-        token = effect.token.copy();
+        this.token = effect.token.copy();
         this.loseAllAbilities = effect.loseAllAbilities;
         this.addStillALandText = effect.addStillALandText;
+        this.loseName = effect.loseName;
+        this.keepAbilities = effect.keepAbilities;
     }
 
     @Override
@@ -82,30 +71,41 @@ public class BecomesCreatureTargetEffect extends ContinuousEffectImpl {
             Permanent permanent = game.getPermanent(permanentId);
             if (permanent != null) {
                 switch (layer) {
+                    case TextChangingEffects_3:
+                        if (sublayer == SubLayer.NA) {
+                            if (loseName) {
+                                permanent.setName(token.getName());
+                            }
+                        }
+                        break;
+
                     case TypeChangingEffects_4:
                         if (sublayer == SubLayer.NA) {
                             if (loseAllAbilities) {
-                                permanent.getSubtype(game).retainAll(SubType.getLandTypes(false));
+                                permanent.getSubtype(game).retainAll(SubType.getLandTypes());
                                 permanent.getSubtype(game).addAll(token.getSubtype(game));
                             } else {
-                                if (!token.getSubtype(game).isEmpty()) {
-                                    for (SubType subtype : token.getSubtype(game)) {
-                                        if (!permanent.hasSubtype(subtype, game)) {
-                                            permanent.getSubtype(game).add(subtype);
-                                        }
+                                for (SubType t : token.getSubtype(game)) {
+                                    if (!permanent.hasSubtype(t, game)) {
+                                        permanent.getSubtype(game).add(t);
                                     }
-
                                 }
                             }
-                            if (!token.getCardType().isEmpty()) {
-                                for (CardType t : token.getCardType()) {
-                                    if (!permanent.getCardType().contains(t)) {
-                                        permanent.addCardType(t);
-                                    }
+
+                            for (SuperType t : token.getSuperType()) {
+                                if (!permanent.getSuperType().contains(t)) {
+                                    permanent.addSuperType(t);
+                                }
+                            }
+
+                            for (CardType t : token.getCardType()) {
+                                if (!permanent.getCardType().contains(t)) {
+                                    permanent.addCardType(t);
                                 }
                             }
                         }
                         break;
+
                     case ColorChangingEffects_5:
                         if (sublayer == SubLayer.NA) {
                             if (loseAllAbilities) {
@@ -120,8 +120,9 @@ public class BecomesCreatureTargetEffect extends ContinuousEffectImpl {
                             }
                         }
                         break;
+
                     case AbilityAddingRemovingEffects_6:
-                        if (loseAllAbilities) {
+                        if (loseAllAbilities && !keepAbilities) {
                             permanent.removeAllAbilities(source.getSourceId(), game);
                         }
                         if (sublayer == SubLayer.NA) {
@@ -154,7 +155,11 @@ public class BecomesCreatureTargetEffect extends ContinuousEffectImpl {
 
     @Override
     public boolean hasLayer(Layer layer) {
-        return layer == Layer.PTChangingEffects_7 || layer == Layer.AbilityAddingRemovingEffects_6 || layer == Layer.ColorChangingEffects_5 || layer == Layer.TypeChangingEffects_4;
+        return layer == Layer.PTChangingEffects_7
+                || layer == Layer.AbilityAddingRemovingEffects_6
+                || layer == Layer.ColorChangingEffects_5
+                || layer == Layer.TypeChangingEffects_4
+                || layer == Layer.TextChangingEffects_3;
     }
 
     @Override
@@ -175,7 +180,7 @@ public class BecomesCreatureTargetEffect extends ContinuousEffectImpl {
             sb.append("  each become ");
         } else {
             sb.append("target ").append(target.getTargetName());
-            if (loseAllAbilities) {
+            if (loseAllAbilities && !keepAbilities) {
                 sb.append(" loses all abilities and ");
             }
             sb.append(" becomes a ");

@@ -1,30 +1,3 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.abilities.effects.common.cost;
 
 import mage.abilities.Ability;
@@ -39,14 +12,17 @@ import mage.game.Game;
 import mage.util.CardUtil;
 
 /**
- *
  * @author LevelX2
  */
 public class SpellCostReductionSourceEffect extends CostModificationEffectImpl {
 
     private final int amount;
     private ManaCosts<ManaCost> manaCostsToReduce = null;
-    private final Condition condition;
+    private Condition condition;
+
+    public SpellCostReductionSourceEffect(ManaCosts<ManaCost> manaCostsToReduce) {
+        this(manaCostsToReduce, null);
+    }
 
     public SpellCostReductionSourceEffect(ManaCosts<ManaCost> manaCostsToReduce, Condition condition) {
         super(Duration.WhileOnBattlefield, Outcome.Benefit, CostModificationType.REDUCE_COST);
@@ -55,12 +31,20 @@ public class SpellCostReductionSourceEffect extends CostModificationEffectImpl {
         this.condition = condition;
 
         StringBuilder sb = new StringBuilder();
-        sb.append("{this} costs ");
+        sb.append("this spell costs ");
         for (String manaSymbol : manaCostsToReduce.getSymbols()) {
             sb.append(manaSymbol);
         }
-        sb.append(" less to if ").append(this.condition.toString());
+        sb.append(" less");
+        if (this.condition != null) {
+            sb.append(" to if ").append(this.condition.toString());
+        }
+
         this.staticText = sb.toString();
+    }
+
+    public SpellCostReductionSourceEffect(int amount) {
+        this(amount, null);
     }
 
     public SpellCostReductionSourceEffect(int amount, Condition condition) {
@@ -68,10 +52,11 @@ public class SpellCostReductionSourceEffect extends CostModificationEffectImpl {
         this.amount = amount;
         this.condition = condition;
         StringBuilder sb = new StringBuilder();
-        sb.append("{this} costs {")
-                .append(amount).append("} less to cast ")
-                .append((this.condition.toString().startsWith("if ") ? "" : "if "))
-                .append(this.condition.toString());
+        sb.append("this spell costs {").append(amount).append("} less to cast");
+        if (this.condition != null) {
+            sb.append(" ").append(this.condition.toString().startsWith("if ") ? "" : "if ");
+            sb.append(this.condition.toString());
+        }
         this.staticText = sb.toString();
     }
 
@@ -95,7 +80,7 @@ public class SpellCostReductionSourceEffect extends CostModificationEffectImpl {
     @Override
     public boolean applies(Ability abilityToModify, Ability source, Game game) {
         if (abilityToModify.getSourceId().equals(source.getSourceId()) && (abilityToModify instanceof SpellAbility)) {
-            return condition.apply(game, source);
+            return condition == null || condition.apply(game, source);
         }
         return false;
     }

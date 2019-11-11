@@ -1,39 +1,5 @@
-/*
- *  Copyright 2011 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.abilities;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import mage.abilities.costs.OptionalAdditionalModeSourceCosts;
 import mage.cards.Card;
 import mage.constants.Outcome;
@@ -43,9 +9,11 @@ import mage.filter.FilterPlayer;
 import mage.game.Game;
 import mage.players.Player;
 import mage.target.common.TargetOpponent;
+import mage.util.RandomUtil;
+
+import java.util.*;
 
 /**
- *
  * @author BetaSteward_at_googlemail.com
  */
 public class Modes extends LinkedHashMap<UUID, Mode> {
@@ -60,6 +28,8 @@ public class Modes extends LinkedHashMap<UUID, Mode> {
     private final Map<UUID, Mode> duplicateModes = new LinkedHashMap<>();
     private OptionalAdditionalModeSourceCosts optionalAdditionalModeSourceCosts = null; // only set if costs have to be paid
     private Filter maxModesFilter = null; // calculates the max number of available modes
+    private boolean isRandom = false;
+    private String chooseText = null;
 
     public Modes() {
         this.currentMode = new Mode();
@@ -77,22 +47,25 @@ public class Modes extends LinkedHashMap<UUID, Mode> {
             this.put(entry.getKey(), entry.getValue().copy());
         }
         for (Map.Entry<UUID, Mode> entry : modes.duplicateModes.entrySet()) {
-            this.put(entry.getKey(), entry.getValue().copy());
+            duplicateModes.put(entry.getKey(), entry.getValue().copy());
         }
         this.minModes = modes.minModes;
         this.maxModes = modes.maxModes;
         this.selectedModes.addAll(modes.getSelectedModes());
 
-        if (modes.getSelectedModes().isEmpty()) {
-            this.currentMode = values().iterator().next();
-        } else {
-            this.currentMode = get(modes.getMode().getId());
-        }
         this.modeChooser = modes.modeChooser;
         this.eachModeOnlyOnce = modes.eachModeOnlyOnce;
         this.eachModeMoreThanOnce = modes.eachModeMoreThanOnce;
         this.optionalAdditionalModeSourceCosts = modes.optionalAdditionalModeSourceCosts;
         this.maxModesFilter = modes.maxModesFilter; // can't change so no copy needed
+
+        this.isRandom = modes.isRandom;
+        this.chooseText = modes.chooseText;
+        if (modes.getSelectedModes().isEmpty()) {
+            this.currentMode = values().iterator().next();
+        } else {
+            this.currentMode = get(modes.getMode().getId());
+        }
     }
 
     public Modes copy() {
@@ -195,6 +168,11 @@ public class Modes extends LinkedHashMap<UUID, Mode> {
         if (this.size() > 1) {
             this.selectedModes.clear();
             this.duplicateModes.clear();
+            if (this.isRandom) {
+                List<Mode> modes = getAvailableModes(source, game);
+                this.addSelectedMode(modes.get(RandomUtil.nextInt(modes.size())).getId());
+                return true;
+            }
             // check if mode modifying abilities exist
             Card card = game.getCard(source.getSourceId());
             if (card != null) {
@@ -224,8 +202,8 @@ public class Modes extends LinkedHashMap<UUID, Mode> {
 
             // 700.2d
             // Some spells and abilities specify that a player other than their controller chooses a mode for it.
-            // In that case, the other player does so when the spell or ability’s controller normally would do so.
-            // If there is more than one other player who could make such a choice, the spell or ability’s controller decides which of those players will make the choice.
+            // In that case, the other player does so when the spell or ability's controller normally would do so.
+            // If there is more than one other player who could make such a choice, the spell or ability's controller decides which of those players will make the choice.
             UUID playerId = null;
             if (modeChooser == TargetController.OPPONENT) {
                 TargetOpponent targetOpponent = new TargetOpponent();
@@ -364,27 +342,40 @@ public class Modes extends LinkedHashMap<UUID, Mode> {
             return this.getMode().getEffects().getText(this.getMode());
         }
         StringBuilder sb = new StringBuilder();
-        if (this.getMaxModesFilter() != null) {
+        if (this.chooseText != null) {
+            sb.append(chooseText);
+        } else if (this.getMaxModesFilter() != null) {
             sb.append("choose one or more. Each mode must target ").append(getMaxModesFilter().getMessage());
-        } else if (this.getMinModes() == 1 && this.getMaxModes() == 3) {
-            sb.append("choose one or more ");
+        } else if (this.getMinModes() == 0 && this.getMaxModes() == 1) {
+            sb.append("choose up to one");
+        } else if (this.getMinModes() == 0 && this.getMaxModes() == 3) {
+            sb.append("choose any number");
+        } else if (this.getMinModes() == 1 && this.getMaxModes() > 2) {
+            sb.append("choose one or more");
         } else if (this.getMinModes() == 1 && this.getMaxModes() == 2) {
-            sb.append("choose one or both ");
+            sb.append("choose one or both");
         } else if (this.getMinModes() == 2 && this.getMaxModes() == 2) {
-            sb.append("choose two ");
+            sb.append("choose two");
         } else if (this.getMinModes() == 3 && this.getMaxModes() == 3) {
-            sb.append("choose three ");
+            sb.append("choose three");
+        } else if (this.getMinModes() == 4 && this.getMaxModes() == 4) {
+            sb.append("choose four");
         } else {
-            sb.append("choose one ");
+            sb.append("choose one");
         }
+
         if (isEachModeOnlyOnce()) {
-            sb.append("that hasn't been chosen ");
+            sb.append(" that hasn't been chosen");
         }
+
         if (isEachModeMoreThanOnce()) {
-            sb.append(". You may choose the same mode more than once.<br>");
-        } else {
-            sb.append("&mdash;<br>");
+            sb.append(". You may choose the same mode more than once.");
+        } else if (chooseText == null) {
+            sb.append(" &mdash;");
         }
+
+        sb.append("<br>");
+
         for (Mode mode : this.values()) {
             sb.append("&bull  ");
             sb.append(mode.getEffects().getTextStartingUpperCase(mode));
@@ -424,4 +415,11 @@ public class Modes extends LinkedHashMap<UUID, Mode> {
         this.optionalAdditionalModeSourceCosts = optionalAdditionalModeSourceCosts;
     }
 
+    public void setRandom(boolean isRandom) {
+        this.isRandom = isRandom;
+    }
+
+    public void setChooseText(String chooseText) {
+        this.chooseText = chooseText;
+    }
 }

@@ -1,38 +1,5 @@
-/*
- * Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are those of the
- * authors and should not be interpreted as representing official policies, either expressed
- * or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.abilities.effects;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import mage.MageObjectReference;
 import mage.abilities.Ability;
 import mage.abilities.MageSingleton;
@@ -40,18 +7,15 @@ import mage.abilities.dynamicvalue.DynamicValue;
 import mage.abilities.dynamicvalue.common.DomainValue;
 import mage.abilities.dynamicvalue.common.SignInversionDynamicValue;
 import mage.abilities.dynamicvalue.common.StaticValue;
-import mage.constants.AbilityType;
-import mage.constants.DependencyType;
-import mage.constants.Duration;
-import mage.constants.EffectType;
-import mage.constants.Layer;
-import mage.constants.Outcome;
-import mage.constants.SubLayer;
+import mage.constants.*;
 import mage.game.Game;
 import mage.players.Player;
+import mage.target.targetpointer.TargetPointer;
+
+import java.util.*;
 
 /**
- * @author BetaSteward_at_googlemail.com
+ * @author BetaSteward_at_googlemail.com, JayDi85
  */
 public abstract class ContinuousEffectImpl extends EffectImpl implements ContinuousEffect {
 
@@ -75,9 +39,10 @@ public abstract class ContinuousEffectImpl extends EffectImpl implements Continu
      */
     protected boolean characterDefining = false;
 
-    // until your next turn
-    protected int startingTurn;
-    protected UUID startingControllerId;
+    // until your next turn or until end of your next turn
+    private UUID startingControllerId; // player to checkss turns (can't different with real controller ability)
+    private boolean startingTurnWasActive;
+    private int yourTurnNumPlayed = 0; // turnes played after effect was created
 
     public ContinuousEffectImpl(Duration duration, Outcome outcome) {
         super(outcome);
@@ -105,11 +70,17 @@ public abstract class ContinuousEffectImpl extends EffectImpl implements Continu
         this.affectedObjectsSet = effect.affectedObjectsSet;
         this.affectedObjectList.addAll(effect.affectedObjectList);
         this.temporary = effect.temporary;
-        this.startingTurn = effect.startingTurn;
         this.startingControllerId = effect.startingControllerId;
+        this.startingTurnWasActive = effect.startingTurnWasActive;
+        this.yourTurnNumPlayed = effect.yourTurnNumPlayed;
         this.dependencyTypes = effect.dependencyTypes;
         this.dependendToTypes = effect.dependendToTypes;
         this.characterDefining = effect.characterDefining;
+    }
+
+    @Override
+    public void setDuration(Duration duration) {
+        this.duration = duration;
     }
 
     @Override
@@ -169,6 +140,11 @@ public abstract class ContinuousEffectImpl extends EffectImpl implements Continu
 
     @Override
     public void init(Ability source, Game game) {
+        init(source, game, game.getActivePlayerId());
+    }
+
+    @Override
+    public void init(Ability source, Game game, UUID activePlayerId) {
         targetPointer.init(game, source);
         //20100716 - 611.2c
         if (AbilityType.ACTIVATED == source.getAbilityType()
@@ -191,23 +167,75 @@ public abstract class ContinuousEffectImpl extends EffectImpl implements Continu
                 this.affectedObjectsSet = true;
             }
         }
-        startingTurn = game.getTurnNum();
-        startingControllerId = source.getControllerId();
+        setStartingControllerAndTurnNum(game, source.getControllerId(), activePlayerId);
+    }
+
+    @Override
+    public UUID getStartingController() {
+        return startingControllerId;
+    }
+
+    @Override
+    public void setStartingControllerAndTurnNum(Game game, UUID startingController, UUID activePlayerId) {
+        this.startingControllerId = startingController;
+        this.startingTurnWasActive = activePlayerId != null && activePlayerId.equals(startingController); // you can't use "game" for active player cause it's called from tests/cheat too
+        this.yourTurnNumPlayed = 0;
+    }
+
+    @Override
+    public void incYourTurnNumPlayed() {
+        yourTurnNumPlayed++;
+    }
+
+    @Override
+    public boolean isYourNextTurn(Game game) {
+        if (this.startingTurnWasActive) {
+            return yourTurnNumPlayed == 1 && game.isActivePlayer(startingControllerId);
+        } else {
+            return yourTurnNumPlayed == 0 && game.isActivePlayer(startingControllerId);
+        }
     }
 
     @Override
     public boolean isInactive(Ability source, Game game) {
-        if (duration == Duration.UntilYourNextTurn) {
-            Player player = game.getPlayer(startingControllerId);
-            if (player != null) {
-                if (player.isInGame()) {
-                    return game.getActivePlayerId().equals(startingControllerId) && game.getTurnNum() != startingTurn;
-                }
-                return player.hasReachedNextTurnAfterLeaving();
-            }
-            return true;
+        // YOUR turn checks
+        // until end of turn - must be checked on cleanup step, see rules 514.2
+        // other must checked here (active and leave players), see rules 800.4
+        switch (duration) {
+            case UntilYourNextTurn:
+            case UntilEndOfYourNextTurn:
+                break;
+            default:
+                return false;
         }
-        return false;
+
+        // cheat engine put cards without play and calls direct applyEffects with clean -- need to ignore it
+        if (game.getActivePlayerId() == null) {
+            return false;
+        }
+
+        boolean canDelete = false;
+        Player player = game.getPlayer(startingControllerId);
+
+        // discard on start of turn for leave player
+        // 800.4i When a player leaves the game, any continuous effects with durations that last until that player's next turn
+        // or until a specific point in that turn will last until that turn would have begun.
+        // They neither expire immediately nor last indefinitely.
+        switch (duration) {
+            case UntilYourNextTurn:
+            case UntilEndOfYourNextTurn:
+                canDelete = player == null || (!player.isInGame() && player.hasReachedNextTurnAfterLeaving());
+        }
+
+        // discard on another conditions (start of your turn)
+        switch (duration) {
+            case UntilYourNextTurn:
+                if (player != null && player.isInGame()) {
+                    canDelete = canDelete || this.isYourNextTurn(game);
+                }
+        }
+
+        return canDelete;
     }
 
     @Override
@@ -284,14 +312,6 @@ public abstract class ContinuousEffectImpl extends EffectImpl implements Continu
             }
         }
         return dependentToEffects;
-        /*
-            return allEffectsInLayer.stream()
-                    .filter(effect -> effect.getDependencyTypes().contains(dependendToTypes))
-                    .map(Effect::getId)
-                    .collect(Collectors.toSet());
-
-        }
-        return new HashSet<>();*/
     }
 
     @Override
@@ -313,6 +333,12 @@ public abstract class ContinuousEffectImpl extends EffectImpl implements Continu
     @Override
     public void addDependedToType(DependencyType dependencyType) {
         dependendToTypes.add(dependencyType);
+    }
+
+    @Override
+    public ContinuousEffect setTargetPointer(TargetPointer targetPointer) {
+        super.setTargetPointer(targetPointer);
+        return this;
     }
 
 }

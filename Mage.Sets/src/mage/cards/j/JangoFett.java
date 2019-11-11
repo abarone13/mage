@@ -1,66 +1,33 @@
-/*
- *  Copyright 2010 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.cards.j;
 
-import java.util.UUID;
 import mage.MageInt;
 import mage.abilities.Ability;
 import mage.abilities.TriggeredAbilityImpl;
 import mage.abilities.common.AttacksTriggeredAbility;
 import mage.abilities.effects.Effect;
 import mage.abilities.effects.OneShotEffect;
+import mage.abilities.effects.common.continuous.BoostSourceEffect;
 import mage.abilities.effects.common.counter.AddCountersTargetEffect;
 import mage.abilities.keyword.HasteAbility;
 import mage.abilities.keyword.MenaceAbility;
 import mage.cards.CardImpl;
 import mage.cards.CardSetInfo;
-import mage.constants.CardType;
-import mage.constants.SubType;
-import mage.constants.Outcome;
-import mage.constants.SuperType;
-import mage.constants.Zone;
+import mage.constants.*;
 import mage.counters.CounterType;
 import mage.filter.common.FilterCreaturePermanent;
-import mage.filter.predicate.permanent.ControllerIdPredicate;
 import mage.filter.predicate.permanent.CounterPredicate;
 import mage.game.Game;
 import mage.game.events.GameEvent;
 import mage.game.events.GameEvent.EventType;
 import mage.game.permanent.Permanent;
-import mage.players.Player;
-import mage.target.TargetPermanent;
 import mage.target.common.TargetOpponentsCreaturePermanent;
 
+import java.util.UUID;
+
 /**
- *
  * @author Styxo/spjspj
  */
-public class JangoFett extends CardImpl {
+public final class JangoFett extends CardImpl {
 
     public JangoFett(UUID ownerId, CardSetInfo setInfo) {
         super(ownerId, setInfo, new CardType[]{CardType.CREATURE}, "{1}{R}{R}");
@@ -81,7 +48,7 @@ public class JangoFett extends CardImpl {
         ability.addTarget(new TargetOpponentsCreaturePermanent());
         this.addAbility(ability);
 
-        // Whenever Jango Fett attacks, it deals X damage to defending player and target creature he or she controls, where X is the number of creatures defending player controls with a bounty counter on them.
+        // Whenever Jango Fett attacks, it gets +X/+0, where X is the number of creatures defending player controls with a bounty counter on them
         this.addAbility(new JangoFettTriggeredAbility(new JangoFettEffect(), false));
     }
 
@@ -123,11 +90,6 @@ class JangoFettTriggeredAbility extends TriggeredAbilityImpl {
         if (event.getSourceId().equals(this.getSourceId())) {
             UUID defenderId = game.getCombat().getDefendingPlayerId(getSourceId(), game);
             if (defenderId != null) {
-                this.getTargets().clear();
-                FilterCreaturePermanent filter = new FilterCreaturePermanent("target creature defending player controls");
-                filter.add(new ControllerIdPredicate(defenderId));
-                TargetPermanent target = new TargetPermanent(filter);
-                this.addTarget(target);
                 return true;
             }
         }
@@ -151,8 +113,8 @@ class JangoFettTriggeredAbility extends TriggeredAbilityImpl {
 class JangoFettEffect extends OneShotEffect {
 
     public JangoFettEffect() {
-        super(Outcome.Damage);
-        this.staticText = "it deals X damage to defending player and target creature he or she controls, where X is the number of creatures defending player controls with a bounty counter on them";
+        super(Outcome.BoostCreature);
+        this.staticText = "it gets +X/+0, where X is the number of creatures defending player controls with a bounty counter on them";
     }
 
     public JangoFettEffect(final JangoFettEffect ability) {
@@ -184,14 +146,7 @@ class JangoFettEffect extends OneShotEffect {
             return false;
         }
 
-        Permanent targetCreature = game.getPermanent(source.getFirstTarget());
-        if (targetCreature != null) {
-            targetCreature.damage(count, source.getSourceId(), game, false, true);
-        }
-        Player defender = game.getPlayer(defenderId);
-        defender.damage(count, source.getSourceId(), game, false, true);
-
+        game.addEffect(new BoostSourceEffect(count, 0, Duration.WhileOnBattlefield), source);
         return true;
     }
-
 }

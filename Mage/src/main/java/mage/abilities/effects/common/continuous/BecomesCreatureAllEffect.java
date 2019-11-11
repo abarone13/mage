@@ -1,45 +1,13 @@
-/*
- *  Copyright 2011 BetaSteward_at_googlemail.com. All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without modification, are
- *  permitted provided that the following conditions are met:
- *
- *     1. Redistributions of source code must retain the above copyright notice, this list of
- *        conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright notice, this list
- *        of conditions and the following disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY BetaSteward_at_googlemail.com ``AS IS'' AND ANY EXPRESS OR IMPLIED
- *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BetaSteward_at_googlemail.com OR
- *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- *  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- *  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  The views and conclusions contained in the software and documentation are those of the
- *  authors and should not be interpreted as representing official policies, either expressed
- *  or implied, of BetaSteward_at_googlemail.com.
- */
 package mage.abilities.effects.common.continuous;
 
 import mage.MageObjectReference;
 import mage.abilities.Ability;
 import mage.abilities.Mode;
 import mage.abilities.effects.ContinuousEffectImpl;
-import mage.constants.CardType;
-import mage.constants.Duration;
-import mage.constants.Layer;
-import mage.constants.Outcome;
-import mage.constants.SubLayer;
+import mage.constants.*;
 import mage.filter.FilterPermanent;
 import mage.game.Game;
 import mage.game.permanent.Permanent;
-import mage.game.permanent.token.TokenImpl;
 import mage.game.permanent.token.Token;
 
 import java.util.HashSet;
@@ -47,26 +15,42 @@ import java.util.Set;
 
 /**
  * @author LevelX2
- *
  */
 public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
 
     protected Token token;
-    protected String type;
+    protected String theyAreStillType;
     private final FilterPermanent filter;
+    private boolean loseColor = true;
+    private boolean loseTypes = false;
+    protected boolean loseName = false;
 
-    public BecomesCreatureAllEffect(Token token, String type, FilterPermanent filter, Duration duration) {
+    public BecomesCreatureAllEffect(Token token, String theyAreStillType, FilterPermanent filter, Duration duration, boolean loseColor) {
+        this(token, theyAreStillType, filter, duration, loseColor, false, false);
+    }
+
+    public BecomesCreatureAllEffect(Token token, String theyAreStillType, FilterPermanent filter, Duration duration, boolean loseColor, boolean loseName) {
+        this(token, theyAreStillType, filter, duration, loseColor, loseName, false);
+    }
+
+    public BecomesCreatureAllEffect(Token token, String theyAreStillType, FilterPermanent filter, Duration duration, boolean loseColor, boolean loseName, boolean loseTypes) {
         super(duration, Outcome.BecomeCreature);
         this.token = token;
-        this.type = type;
+        this.theyAreStillType = theyAreStillType;
         this.filter = filter;
+        this.loseColor = loseColor;
+        this.loseName = loseName;
+        this.loseTypes = loseTypes;
     }
 
     public BecomesCreatureAllEffect(final BecomesCreatureAllEffect effect) {
         super(effect);
-        token = effect.token.copy();
-        type = effect.type;
+        this.token = effect.token.copy();
+        this.theyAreStillType = effect.theyAreStillType;
         this.filter = effect.filter.copy();
+        this.loseColor = effect.loseColor;
+        this.loseName = effect.loseName;
+        this.loseTypes = effect.loseTypes;
     }
 
     @Override
@@ -88,39 +72,70 @@ public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
     public boolean apply(Layer layer, SubLayer sublayer, Ability source, Game game) {
         Set<Permanent> affectedPermanents = new HashSet<>();
         if (this.affectedObjectsSet) {
-            for(MageObjectReference ref : affectedObjectList) {
+            for (MageObjectReference ref : affectedObjectList) {
                 affectedPermanents.add(ref.getPermanent(game));
             }
         } else {
             affectedPermanents = new HashSet<>(game.getBattlefield().getActivePermanents(filter, source.getControllerId(), source.getSourceId(), game));
         }
-        for(Permanent permanent : affectedPermanents) {
+
+        for (Permanent permanent : affectedPermanents) {
             if (permanent != null) {
                 switch (layer) {
+                    case TextChangingEffects_3:
+                        if (sublayer == SubLayer.NA) {
+                            if (loseName) {
+                                permanent.setName(token.getName());
+                            }
+                        }
+                        break;
+
                     case TypeChangingEffects_4:
                         if (sublayer == SubLayer.NA) {
-                            if (!token.getCardType().isEmpty()) {
-                                for (CardType t : token.getCardType()) {
-                                    if (!permanent.getCardType().contains(t)) {
-                                        permanent.addCardType(t);
+                            if (theyAreStillType != null) {
+                                permanent.getSubtype(game).retainAll(SubType.getLandTypes());
+                                permanent.getSubtype(game).addAll(token.getSubtype(game));
+                            } else {
+                                if (loseTypes) {
+                                    permanent.getSubtype(game).retainAll(SubType.getLandTypes());
+                                }
+
+                                for (SubType t : token.getSubtype(game)) {
+                                    if (!permanent.hasSubtype(t, game)) {
+                                        permanent.getSubtype(game).add(t);
                                     }
                                 }
                             }
-                            if (type == null) {
-                                permanent.getSubtype(game).clear();
+
+                            for (SuperType t : token.getSuperType()) {
+                                if (!permanent.getSuperType().contains(t)) {
+                                    permanent.addSuperType(t);
+                                }
                             }
-                            if (!token.getSubtype(game).isEmpty()) {
-                                permanent.getSubtype(game).addAll(token.getSubtype(game));
+
+                            for (CardType t : token.getCardType()) {
+                                if (!permanent.getCardType().contains(t)) {
+                                    permanent.addCardType(t);
+                                }
                             }
                         }
                         break;
+
                     case ColorChangingEffects_5:
                         if (sublayer == SubLayer.NA) {
+                            if (this.loseColor) {
+                                permanent.getColor(game).setBlack(false);
+                                permanent.getColor(game).setGreen(false);
+                                permanent.getColor(game).setBlue(false);
+                                permanent.getColor(game).setWhite(false);
+                                permanent.getColor(game).setRed(false);
+                            }
                             if (token.getColor(game).hasColor()) {
-                                permanent.getColor(game).setColor(token.getColor(game));
+                                permanent.getColor(game).addColor(token.getColor(game));
                             }
                         }
                         break;
+
                     case AbilityAddingRemovingEffects_6:
                         if (sublayer == SubLayer.NA) {
                             if (!token.getAbilities().isEmpty()) {
@@ -130,6 +145,7 @@ public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
                             }
                         }
                         break;
+
                     case PTChangingEffects_7:
                         if (sublayer == SubLayer.SetPT_7b) {
                             int power = token.getPower().getValue();
@@ -139,6 +155,7 @@ public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
                                 permanent.getToughness().setValue(toughness);
                             }
                         }
+                        break;
                 }
             }
         }
@@ -152,7 +169,11 @@ public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
 
     @Override
     public boolean hasLayer(Layer layer) {
-        return layer == Layer.PTChangingEffects_7 || layer == Layer.AbilityAddingRemovingEffects_6 || layer == Layer.ColorChangingEffects_5 || layer == Layer.TypeChangingEffects_4;
+        return layer == Layer.PTChangingEffects_7
+                || layer == Layer.AbilityAddingRemovingEffects_6
+                || layer == Layer.ColorChangingEffects_5
+                || layer == Layer.TypeChangingEffects_4
+                || layer == Layer.TextChangingEffects_3;
     }
 
     @Override
@@ -168,8 +189,8 @@ public class BecomesCreatureAllEffect extends ContinuousEffectImpl {
             sb.append(" become ");
         }
         sb.append(token.getDescription());
-        if (type != null && !type.isEmpty()) {
-            sb.append(". They're still ").append(type);
+        if (theyAreStillType != null && !theyAreStillType.isEmpty()) {
+            sb.append(". They're still ").append(theyAreStillType);
         }
         return sb.toString();
     }

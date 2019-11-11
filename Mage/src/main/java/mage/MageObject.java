@@ -18,6 +18,7 @@ import mage.util.SubTypeList;
 import java.io.Serializable;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public interface MageObject extends MageItem, Serializable {
@@ -32,13 +33,13 @@ public interface MageObject extends MageItem, Serializable {
 
     void setName(String name);
 
-    EnumSet<CardType> getCardType();
+    Set<CardType> getCardType();
 
     SubTypeList getSubtype(Game game);
 
     boolean hasSubtype(SubType subtype, Game game);
 
-    EnumSet<SuperType> getSuperType();
+    Set<SuperType> getSuperType();
 
     Abilities<Ability> getAbilities();
 
@@ -64,20 +65,14 @@ public interface MageObject extends MageItem, Serializable {
 
     void adjustTargets(Ability ability, Game game);
 
+    // memory object copy (not mtg)
     MageObject copy();
 
-    /**
-     * Defines that MageObject is a copy of another object
-     *
-     * @param isCopy
-     */
-    void setCopy(boolean isCopy);
+    // copied card info (mtg)
+    void setCopy(boolean isCopy, MageObject copiedFrom);
 
-    /**
-     * Checks if current MageObject is a copy of another object
-     *
-     * @return
-     */
+    MageObject getCopyFrom();
+
     boolean isCopy();
 
     int getZoneChangeCounter(Game game);
@@ -86,10 +81,10 @@ public interface MageObject extends MageItem, Serializable {
 
     void setZoneChangeCounter(int value, Game game);
 
-    default boolean isHistoric(){
+    default boolean isHistoric() {
         return getCardType().contains(CardType.ARTIFACT)
                 || getSuperType().contains(SuperType.LEGENDARY)
-                || hasSubtype(SubType.SAGA, null );
+                || hasSubtype(SubType.SAGA, null);
     }
 
     default boolean isCreature() {
@@ -114,6 +109,10 @@ public interface MageObject extends MageItem, Serializable {
 
     default boolean isSorcery() {
         return getCardType().contains(CardType.SORCERY);
+    }
+
+    default boolean isInstantOrSorcery() {
+        return this.isInstant() || this.isSorcery();
     }
 
     default boolean isPlaneswalker() {
@@ -155,13 +154,18 @@ public interface MageObject extends MageItem, Serializable {
      * @return
      */
     default boolean shareTypes(Card otherCard) {
+        return this.shareTypes(otherCard, false);
+    }
+
+    default boolean shareTypes(Card otherCard, boolean permanentOnly) {
 
         if (otherCard == null) {
             throw new IllegalArgumentException("Params can't be null");
         }
 
         for (CardType type : getCardType()) {
-            if (otherCard.getCardType().contains(type)) {
+            if (otherCard.getCardType().contains(type)
+                    && (!permanentOnly || type.isPermanentType())) {
                 return true;
             }
         }
@@ -196,7 +200,7 @@ public interface MageObject extends MageItem, Serializable {
 
     void setIsAllCreatureTypes(boolean value);
 
-    default void addCardTypes(EnumSet<CardType> cardType) {
+    default void addCardTypes(Set<CardType> cardType) {
         getCardType().addAll(cardType);
     }
 
